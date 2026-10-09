@@ -124,6 +124,62 @@ gives a self-contained, self-updating-free folder.
 These paths deliberately differ from upstream Syncthing's, so this app never
 shares a config, database or lock file with a separately installed Syncthing.
 
+### Choosing a different data directory
+
+**Settings → Data → Move…** relocates everything: pick a directory and the app
+copies its config, keys and database there and restarts. Because the device
+certificate comes along, the device ID and every pairing survive the move.
+Shared *folders* are not touched — they live wherever they already live.
+
+The old directory is left behind as a backup; delete it yourself once the new
+one is confirmed working.
+
+Which directory is in use is decided in this order:
+
+1. `-data DIR` on the command line
+2. portable mode (`-portable`, or the marker file beside the executable)
+3. the path recorded in `<platform default>\data-dir.txt`
+4. the platform default itself
+
+The choice has to be recorded outside the data directory, since reading the
+data directory's own settings would require already knowing where it is. Hence
+`data-dir.txt`, a one-line file in the platform default directory. Deleting it
+is not a way to move the data — it just makes the app start in the default
+directory and look like a fresh install.
+
+A move happens in two steps because the database cannot be copied while it is
+open: the request is written into the current directory as `migrate-to.txt`,
+the app restarts, and the copy runs before anything is opened. If the app is
+killed between the two, the next start performs the migration.
+
+### Moving a shared folder
+
+Changing the data directory does not move the folders being shared — those sit
+wherever you put them, which is usually the point. To relocate one, use
+**Folders → the folder's Move… button**.
+
+The folder is paused-free but offline-by-definition while it moves: the data is
+copied to the new directory first and only removed from the old one once every
+file has arrived, so an interrupted move leaves the original intact and the
+configuration still pointing at it. Afterwards syncthing re-indexes the new
+location.
+
+Two things worth knowing before confirming:
+
+- **Other devices are not involved.** They keep their own copies; this only
+  changes where *this* machine keeps its copy. Nothing is re-downloaded.
+- **The destination's existing contents are merged**, not replaced. So if you
+  point a folder at a directory that already has files, you get the union of the
+  two. The confirmation names the file count and size first, and asks separately
+  whether to delete files in the destination that the folder does not have.
+
+Moving between two places on the same filesystem needs no extra space and is
+near-instant; across filesystems it is a genuine copy, and the confirmation
+reports the size so you can judge whether there is room.
+
+`cmd/syncthing-cli` can do the same headlessly with `-move-id` and
+`-move-folder`, and prints the same size report first.
+
 ### Files in the data directory
 
 | File | Contents |
@@ -134,6 +190,10 @@ shares a config, database or lock file with a separately installed Syncthing.
 | `syncthing-app.log` | application log, also shown in the Logs tab |
 | `syncthing.lock` | single-instance lock |
 | `.setup-complete` | written after the first-run wizard finishes |
+| `migrate-to.txt` | transient; present only between "move requested" and the restart that performs it |
+
+`data-dir.txt`, which names the data directory, lives in the *platform default*
+directory rather than in here — see above.
 
 ## Languages
 
@@ -155,6 +215,13 @@ Two translation catalogs have to stay in step:
 `go test ./appcore/` fails if a code exists in one language but not the other.
 
 ## Behaviour notes
+
+**The window appears before the core is ready, behind a splash.** Starting the
+instance takes a few seconds — the database opens, discovery runs, and the first
+folder scan completes — and until it finishes every list is legitimately empty.
+The splash covers that window so an empty folder list is never mistaken for a
+lost configuration. It disappears when the core reports itself ready; if that
+takes more than 15 seconds a button appears to dismiss it early.
 
 **The web GUI is off.** The embedded instance sets `gui.enabled=false`, so
 nothing listens on port 8384 — which also means the app never collides with a
@@ -203,6 +270,8 @@ go build -o cli ./cmd/syncthing-cli
 | `-add-folder DIR` | share a directory (combine with `-add-device`) |
 | `-accept DIR` | accept pending folders under `DIR` |
 | `-accept-wait D` | how long to wait for them (default 20s) |
+| `-move-id ID` | folder to relocate (with `-move-folder`) |
+| `-move-folder DIR` | move that folder's data to `DIR` |
 | `-dump` | print the state snapshot as JSON and exit |
 | `-quiet` | suppress the periodic state line |
 
@@ -212,6 +281,9 @@ go build -o cli ./cmd/syncthing-cli
 go test ./appcore/...
 go vet -tags "noassets" ./appcore/... ./desktop/...
 gofmt -l appcore desktop buildapp cmd/syncthing-app cmd/syncthing-cli
+
+# Frontend checks: parses, catalogs in step, every key resolves
+node desktop/frontend/dist/check.mjs
 ```
 
 The frontend has no build step: edit `desktop/frontend/dist/` and rebuild. It

@@ -12,6 +12,12 @@ const CATALOG = {
   en: {
     'app.name': 'SyncthingApp',
 
+    // startup splash
+    'boot.title': 'Starting SyncthingApp…',
+    'boot.detail': 'Loading the configuration and database.',
+    'boot.slow': 'This is taking longer than usual. The app is still working; you can look at the window meanwhile.',
+    'boot.showAnyway': 'Show the window anyway',
+
     // wizard
     'wizard.title': 'Welcome to SyncthingApp',
     'wizard.subtitle': 'Two quick choices and you are ready to sync.',
@@ -53,6 +59,12 @@ const CATALOG = {
     'folders.stop': 'Stop sharing',
     'folders.stopConfirm': 'Stop sharing "{name}"?\n\nThe files are kept on disk.',
     'folders.note': 'note',
+    'folders.move': 'Move…',
+    'folders.movePick': 'Choose the new location for "{name}"',
+    'folders.moveConfirm': 'Move "{name}" to:\n\n{target}\n\n{files} file(s), {size}. The files are copied and then removed from the old location. Shared folders are not affected on other devices.',
+    'folders.moveMergeConfirm': 'Move "{name}" to:\n\n{target}\n\nThat directory already has files in it. They will be merged with the folder\'s own files, and anything left over there stays.\n\n{files} file(s), {size}. The files are copied and then removed from the old location.',
+    'folders.moveReplaceConfirm': 'Delete files in {target} that are not part of "{name}"? Choose No to keep them.',
+    'folders.moveFailed': 'Could not move the folder: {err}',
 
     // folder states
     'folder.paused': 'paused',
@@ -128,6 +140,11 @@ const CATALOG = {
     'settings.saved': 'Saved',
     'settings.saveFailed': 'Could not save settings: {err}',
     'settings.data': 'Data',
+    'settings.dataDirLabel': 'Settings and database are stored here',
+    'settings.dataDirMove': 'Move…',
+    'settings.dataDirPick': 'Choose the new data directory',
+    'settings.dataDirConfirm': 'Copy the settings and database to {dir} and restart?\n\nShared folders themselves are NOT moved, and the old directory is left behind as a backup. The app closes and starts again.',
+    'settings.dataDirFailed': 'Could not change the data directory: {err}',
     'settings.quit': 'Quit SyncthingApp',
 
     // logs
@@ -137,6 +154,11 @@ const CATALOG = {
 
   zh: {
     'app.name': 'SyncthingApp',
+
+    'boot.title': '正在启动 SyncthingApp…',
+    'boot.detail': '正在加载配置和数据库。',
+    'boot.slow': '比平常慢一些。程序还在启动，你可以先看看界面。',
+    'boot.showAnyway': '仍然显示界面',
 
     'wizard.title': '欢迎使用 SyncthingApp',
     'wizard.subtitle': '两步设置，即可开始同步。',
@@ -175,6 +197,12 @@ const CATALOG = {
     'folders.stop': '停止共享',
     'folders.stopConfirm': '停止共享“{name}”？\n\n磁盘上的文件会保留。',
     'folders.note': '提示',
+    'folders.move': '移动…',
+    'folders.movePick': '为“{name}”选择新位置',
+    'folders.moveConfirm': '把“{name}”移动到：\n\n{target}\n\n{files} 个文件，{size}。文件会被复制过去，然后从原位置删除。其他设备上的共享不受影响。',
+    'folders.moveMergeConfirm': '把“{name}”移动到：\n\n{target}\n\n该目录里已经有文件，会与这个文件夹的内容合并，多出来的文件原地保留。\n\n{files} 个文件，{size}。文件会被复制过去，然后从原位置删除。',
+    'folders.moveReplaceConfirm': '删除 {target} 中不属于“{name}”的文件？选“否”则保留。',
+    'folders.moveFailed': '移动文件夹失败：{err}',
 
     'folder.paused': '已暂停',
     'folder.idle': '空闲',
@@ -245,6 +273,11 @@ const CATALOG = {
     'settings.saved': '已保存',
     'settings.saveFailed': '保存设置失败：{err}',
     'settings.data': '数据',
+    'settings.dataDirLabel': '设置和数据库保存在这里',
+    'settings.dataDirMove': '更改…',
+    'settings.dataDirPick': '选择新的数据目录',
+    'settings.dataDirConfirm': '把设置和数据库复制到 {dir} 并重启？\n\n共享的文件夹本身不会移动，旧目录会保留作为备份。程序会关闭后自动重新启动。',
+    'settings.dataDirFailed': '无法更改数据目录：{err}',
     'settings.quit': '退出 SyncthingApp',
 
     'logs.refresh': '刷新',

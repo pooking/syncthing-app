@@ -156,6 +156,11 @@ func (a *App) Version() string { return a.core.Version() }
 // DataDir returns the resolved data directory.
 func (a *App) DataDir() string { return a.core.DataDir() }
 
+// MoveDataDir relocates the data directory: it validates the target, records
+// the request and restarts the app, which performs the copy before opening
+// anything. The call does not return on success, because the process exits.
+func (a *App) MoveDataDir(path string) error { return a.core.MoveDataDir(path) }
+
 // AddFolders shares the given directories (used by the file picker; drag and
 // drop calls DropFolders).
 func (a *App) AddFolders(pathsJSON, peersJSON string) (string, error) {
@@ -240,6 +245,21 @@ func (a *App) SetFolderIgnores(id, patternsJSON string) error {
 
 // OpenFolder reveals a shared folder in the file manager.
 func (a *App) OpenFolder(id string) error { return a.core.OpenFolder(id) }
+
+// CheckFolderMove reports what moving a folder's data would involve, as JSON.
+// The UI calls it before asking, so the confirmation can name the size.
+func (a *App) CheckFolderMove(id, target string) (string, error) {
+	check, err := a.core.CheckFolderMove(id, target)
+	if err != nil {
+		return "", err
+	}
+	return jsonString(check), nil
+}
+
+// MoveFolder relocates a folder's data and points syncthing at the new path.
+func (a *App) MoveFolder(id, target string, replace bool) error {
+	return a.core.MoveFolder(id, target, replace)
+}
 
 // AddDevice pairs with a remote device.
 func (a *App) AddDevice(id, name string) error {

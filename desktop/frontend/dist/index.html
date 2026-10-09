@@ -7,6 +7,17 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+<!-- Startup splash: visible until the core reports itself ready, so the main
+     window is never shown with the configuration still empty. -->
+<div id="boot" class="boot">
+  <div class="boot-card">
+    <div class="boot-spinner" aria-hidden="true"></div>
+    <h1 data-i18n="boot.title">Starting SyncthingApp…</h1>
+    <p class="hint" id="boot-detail" data-i18n="boot.detail">Loading the configuration and database.</p>
+    <button class="btn hidden" id="boot-anyway" data-i18n="boot.showAnyway">Show the window anyway</button>
+  </div>
+</div>
+
 <div id="wizard" class="wizard hidden">
   <div class="wizard-card">
     <h1 data-i18n="wizard.title">Welcome to SyncthingApp</h1>
@@ -163,7 +174,12 @@
 
       <div class="card danger">
         <h2 data-i18n="settings.data">Data</h2>
-        <p class="hint" id="data-dir">—</p>
+        <p class="hint" data-i18n="settings.dataDirLabel">Settings and database are stored here</p>
+        <div class="row">
+          <code class="id" id="data-dir">—</code>
+          <button class="btn" id="move-data" data-i18n="settings.dataDirMove">Move…</button>
+        </div>
+        <p class="conflict hidden" id="data-dir-error"></p>
         <button class="btn danger" id="quit-app" data-i18n="settings.quit">Quit SyncthingApp</button>
       </div>
     </section>

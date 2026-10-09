@@ -28,12 +28,17 @@ async function boot() {
   $('my-id').textContent = myID;
   $('device-line').textContent = `${await api().ShortDeviceID()} · ${await api().DataDir()}`;
   $('data-dir').textContent = await api().DataDir();
+  $('data-dir').title = await api().DataDir();
 
   rt().EventsOn('state', (json) => {
-    state = JSON.parse(json);
+    bootState = JSON.parse(json);
+    state = bootState;
     render();
+    hideBootOnReady();
   });
   rt().EventsOn('dropped', (json) => showDropResult(JSON.parse(json)));
+
+  wireBoot();
 
   const setup = JSON.parse(await api().SetupStatus());
   await adoptLanguage();
@@ -42,6 +47,46 @@ async function boot() {
     return;
   }
   await startApp();
+}
+
+// ---- startup splash ----
+
+// The window is created before the embedded instance finishes starting, so for
+// the first moments every list is legitimately empty. Showing the real UI then
+// makes it look like the configuration was lost, so the splash covers it until
+// the core reports itself ready.
+let bootState = null;
+let bootTimer = null;
+
+function wireBoot() {
+  $('boot-anyway').addEventListener('click', () => hideBoot());
+}
+
+// showBoot reveals the splash, unless the core is already known to be up.
+// Called by startApp, which has no reliable way to know how far along startup is.
+function showBoot() {
+  if (bootState && bootState.phase !== 'starting') return;
+  $('boot').classList.remove('hidden');
+  clearTimeout(bootTimer);
+  // A start that never completes must not trap the user behind the splash.
+  bootTimer = setTimeout(() => {
+    $('boot-detail').textContent = t('boot.slow');
+    $('boot-anyway').classList.remove('hidden');
+  }, 15000);
+}
+
+function hideBoot() {
+  clearTimeout(bootTimer);
+  $('boot').classList.add('hidden');
+}
+
+// hideBootOnReady hides the splash once the core reports it is up. An unknown
+// state keeps the splash: it means no snapshot has arrived yet, which is exactly
+// the situation the splash exists for.
+function hideBootOnReady() {
+  if (!bootState || bootState.phase === 'starting') return false;
+  hideBoot();
+  return true;
 }
 
 // adoptLanguage asks the Go side whether the user picked a language (recorded
@@ -59,6 +104,10 @@ async function startApp() {
   await loadSettings();
   await refreshLogs();
   render();
+  // Discovery, the database and the first folder scan all happen after the
+  // window exists; cover them until the core says it is up.
+  showBoot();
+  hideBootOnReady();
 }
 
 // ---- first-run wizard ----
@@ -182,6 +231,21 @@ function wireActions() {
     }
   });
 
+  $('move-data').addEventListener('click', async () => {
+    const err = $('data-dir-error');
+    err.classList.add('hidden');
+    const dir = await api().PickDirectory(t('settings.dataDirPick'));
+    if (!dir) return;
+    if (!confirm(t('settings.dataDirConfirm', { dir }))) return;
+    try {
+      // On success the app restarts itself, so there is nothing to report.
+      await api().MoveDataDir(dir);
+    } catch (e) {
+      err.textContent = t('settings.dataDirFailed', { err: e });
+      err.classList.remove('hidden');
+    }
+  });
+
   $('quit-app').addEventListener('click', () => api().Quit());
   $('refresh-logs').addEventListener('click', async () => {
     await refreshLogs();
@@ -247,6 +311,7 @@ function renderFolders() {
         () => api().SetFolderPaused(f.id, !f.paused)),
       button(t('folders.rescan'), () => api().RescanFolder(f.id)),
       button(t('folders.open'), () => api().OpenFolder(f.id)),
+      button(t('folders.move'), () => moveFolder(f)),
       button(t('folders.stop'), async () => {
         if (confirm(t('folders.stopConfirm', { name: f.label || f.id }))) {
           await api().RemoveFolder(f.id, false);
@@ -255,6 +320,50 @@ function renderFolders() {
     );
     list.append(li);
   }
+}
+
+// moveFolder relocates a folder's data. The size is reported before anything
+// happens, because a move across filesystems is a real copy that can take a
+// long time and needs room at the destination.
+async function moveFolder(f) {
+  const name = f.label || f.id;
+  const dir = await api().PickDirectory(t('folders.movePick', { name }));
+  if (!dir) return;
+
+  let check;
+  try {
+    check = JSON.parse(await api().CheckFolderMove(f.id, dir));
+  } catch (e) {
+    alert(t('folders.moveFailed', { err: e }));
+    return;
+  }
+
+  const params = { target: check.target, files: check.files, size: formatBytes(check.bytes) };
+  if (check.targetExists) {
+    if (!confirm(t('folders.moveMergeConfirm', params))) return;
+  } else if (!confirm(t('folders.moveConfirm', params))) {
+    return;
+  }
+
+  const replace = check.targetExists
+    ? confirm(t('folders.moveReplaceConfirm', params))
+    : false;
+
+  try {
+    await api().MoveFolder(f.id, dir, replace);
+  } catch (e) {
+    alert(t('folders.moveFailed', { err: e }));
+  }
+}
+
+// formatBytes renders a byte count for the confirmation text.
+function formatBytes(n) {
+  n = Number(n) || 0;
+  if (n < 1024) return n + ' B';
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let i = -1;
+  do { n /= 1024; i++; } while (n >= 1024 && i < units.length - 1);
+  return (n < 10 ? n.toFixed(1) : Math.round(n)) + ' ' + units[i];
 }
 
 function folderStatusText(f) {

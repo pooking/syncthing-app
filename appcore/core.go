@@ -94,13 +94,7 @@ func Start(opts Options) (*App, error) {
 	// default folder template should point somewhere sensible for a portable
 	// app. This has to happen before the first locations.Get call, which is
 	// why it is the very first thing we do.
-	if err := locations.SetBaseDir(locations.ConfigBaseDir, a.dataDir); err != nil {
-		return nil, err
-	}
-	if err := locations.SetBaseDir(locations.DataBaseDir, a.dataDir); err != nil {
-		return nil, err
-	}
-	if err := locations.Set(locations.DefFolder, filepath.Join(a.dataDir, "Sync")); err != nil {
+	if err := setLocationBaseDirs(a.dataDir); err != nil {
 		return nil, err
 	}
 
@@ -290,6 +284,14 @@ func PortableRequested() bool {
 	return err == nil
 }
 
+// resolveDataDir decides where state lives, in order of precedence:
+//
+//  1. an explicit --data argument,
+//  2. portable mode: a Data directory beside the executable,
+//  3. the platform default directory, or wherever the pointer file in it says.
+//
+// The first two are explicit statements about the layout, so they skip the
+// pointer file and any queued migration entirely.
 func (a *App) resolveDataDir() error {
 	if a.opts.DataDir != "" {
 		abs, err := filepath.Abs(a.opts.DataDir)
@@ -307,7 +309,7 @@ func (a *App) resolveDataDir() error {
 		a.dataDir = filepath.Join(filepath.Dir(exe), "Data")
 		return nil
 	}
-	dir, err := defaultDataDir()
+	dir, err := resolveDataDirIfNeeded()
 	if err != nil {
 		return err
 	}

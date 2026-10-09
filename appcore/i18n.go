@@ -64,6 +64,19 @@ const (
 	CodeWriteSetup      Code = "write-setup"
 	CodeAutostart       Code = "autostart"
 
+	// Relocating the data directory.
+	CodeDataMovePortable Code = "data-move-portable"
+	CodeDataMoveSame     Code = "data-move-same"
+	CodeDataMoveNested   Code = "data-move-nested"
+	CodeDataMoveWrite    Code = "data-move-write"
+	CodeRestart          Code = "restart"
+
+	// Relocating a shared folder's directory.
+	CodeFolderMove       Code = "folder-move"
+	CodeFolderMoveSame   Code = "folder-move-same"
+	CodeFolderMoveNested Code = "folder-move-nested"
+	CodeFolderMoveWrite  Code = "folder-move-write"
+
 	// Tray menu and tooltip.
 	CodeTrayOpen       Code = "tray-open"
 	CodeTrayPause      Code = "tray-pause"
@@ -115,6 +128,17 @@ var messages = map[Lang]map[Code]string{
 		CodeWriteSetup:      "write setup marker: %v",
 		CodeAutostart:       "set start at login: %v",
 
+		CodeDataMovePortable: "a portable copy keeps its data next to the executable",
+		CodeDataMoveSame:     "the new location is the current one",
+		CodeDataMoveNested:   "it overlaps with the shared folder %q",
+		CodeDataMoveWrite:    "the new location is not usable: %v",
+		CodeRestart:          "could not restart automatically (%v) — start the app again to finish the move",
+
+		CodeFolderMove:       "move the folder: %v",
+		CodeFolderMoveSame:   "the new location is the current one",
+		CodeFolderMoveNested: "the new location is inside the folder itself",
+		CodeFolderMoveWrite:  "the new location is not usable: %v",
+
 		CodeTrayOpen:       "Open SyncthingApp",
 		CodeTrayPause:      "Pause syncing",
 		CodeTrayDevice:     "Device ID: %s",
@@ -159,6 +183,17 @@ var messages = map[Lang]map[Code]string{
 		CodeCreateSyncDir:   "创建同步目录失败：%v",
 		CodeWriteSetup:      "写入初始化标记失败：%v",
 		CodeAutostart:       "设置开机自启失败：%v",
+
+		CodeDataMovePortable: "便携版的程序把数据保存在自己旁边",
+		CodeDataMoveSame:     "新位置就是当前目录",
+		CodeDataMoveNested:   "与已共享文件夹“%s”重叠",
+		CodeDataMoveWrite:    "新位置不可用：%v",
+		CodeRestart:          "无法自动重启（%v）——请手动重新打开程序以完成迁移",
+
+		CodeFolderMove:       "移动文件夹失败：%v",
+		CodeFolderMoveSame:   "新位置就是当前目录",
+		CodeFolderMoveNested: "新位置在这个文件夹内部",
+		CodeFolderMoveWrite:  "新位置不可用：%v",
 
 		CodeTrayOpen:       "打开 SyncthingApp",
 		CodeTrayPause:      "暂停同步",

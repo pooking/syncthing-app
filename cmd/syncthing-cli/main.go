@@ -33,6 +33,8 @@ func main() {
 		wait      = flag.Duration("accept-wait", 20*time.Second, "how long to wait for pending folders with -accept")
 		dump      = flag.Bool("dump", false, "print the state snapshot as JSON and exit")
 		quiet     = flag.Bool("quiet", false, "suppress the periodic state line")
+		moveTo    = flag.String("move-folder", "", "relocate the folder named by -move-id to this directory")
+		moveID    = flag.String("move-id", "", "ID of the folder to relocate with -move-folder")
 	)
 	flag.Parse()
 
@@ -72,6 +74,21 @@ func main() {
 		}
 		for _, r := range res.Rejected {
 			fmt.Printf("  rejected %s: %s\n", r.Path, r.Reason)
+		}
+	}
+
+	if *moveTo != "" {
+		check, err := app.CheckFolderMove(*moveID, *moveTo)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "check move:", err)
+		} else {
+			fmt.Printf("Move check: %d file(s), %d byte(s), same filesystem: %v, target has files: %v\n",
+				check.Files, check.Bytes, check.SameFilesystem, check.TargetExists)
+		}
+		if err := app.MoveFolder(*moveID, *moveTo, false); err != nil {
+			fmt.Fprintln(os.Stderr, "move folder:", err)
+		} else {
+			fmt.Printf("Moved:     %s -> %s\n", check.Source, check.Target)
 		}
 	}
 

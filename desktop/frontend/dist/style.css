@@ -164,6 +164,41 @@ input[type=text], input[type=number], select {
   white-space: pre-wrap; word-break: break-word; margin: 12px 0 0;
 }
 
+/* Startup splash */
+
+.boot {
+  position: fixed; inset: 0; display: flex;
+  align-items: center; justify-content: center;
+  background: var(--bg); z-index: 20;
+}
+
+.boot-card {
+  width: min(420px, calc(100vw - 48px));
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 32px 30px 28px;
+  text-align: center;
+}
+.boot-card h1 { font-size: 17px; margin: 18px 0 0; }
+.boot-card .hint { margin-top: 8px; }
+.boot-card .btn { margin-top: 20px; }
+
+.boot-spinner {
+  width: 34px; height: 34px; margin: 0 auto;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: boot-spin .9s linear infinite;
+}
+
+@keyframes boot-spin { to { transform: rotate(360deg); } }
+
+/* Respect a user who has asked for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .boot-spinner { animation-duration: 2.5s; }
+}
+
 /* First-run wizard */
 
 .wizard {

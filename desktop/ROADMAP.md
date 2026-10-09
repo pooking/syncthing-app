@@ -51,6 +51,10 @@ E:\Dev\syncthing-app\dist\
 ### 其它已知问题 / 技术债
 
 - **日志无滚动**：`appcore/core.go` 用 `O_APPEND` 写 `syncthing-app.log`，永不切分，长期运行会无限增长
+- **移动文件夹是整体复制后删除，没有进度条**：大目录跨盘移动时界面看起来像卡住了（`appcore/folders.go` 的 `moveFolderData`）。确认框里报了大小，但没有进度反馈；超大数据集需要考虑边移动边同步的方案
+- **文件夹移动的「同盘=瞬时」判断是近似的**：Windows 按盘符，macOS 按 `/Volumes` 挂载点，Linux 按设备号（`filesystem_*.go`）。mkdir 挂载的同一盘符会被误判为同盘，结果只是多复制一次，不会出错
+- **数据目录迁移不搬共享文件夹**：这是有意的（共享文件夹可能在别的盘、体积很大），确认框里已写明；迁移只复制数据目录本身（config/cert/index-v2/log），旧目录保留作备份，需用户手动删
+- **迁移后 `locations` 里的文件夹模板路径不重写**：`config.xml` 原样复制，其中 `Defaults.Folder.Path` 指向旧数据目录下的 `Sync/`。已共享的文件夹不受影响（路径是绝对的），但「接受别人的文件夹」时的默认落地位置仍指向旧目录。`AcceptPendingFolder` 走的是 `DataDir()/Sync/<id>`（`desktop/app.go:403`），所以实际行为正确，只有模板值本身是陈旧的
 - ~~`dist/` 只被 `.gitignore` 的 `*.zip` 覆盖~~ 已核实：上游 `.gitignore` 同时含 `*.zip` 和 `*.exe`，`dist/` 下的产物全部被忽略，无需额外规则（早先看到的 `?? dist/` 来自一个构建残留文件 `syncthing-app-windows-amd64.exe~`，已删除）
 - **macOS/Linux GUI 无法在本机交叉编译**：Wails 在 Linux 链接 GTK/WebKit、macOS 链接 Cocoa，`fyne.io/systray` 两端都是 cgo。`buildapp` 已能给出明确报错，但产物必须在对应平台构建
 - **`lib/syncthing/internals.go` 是唯一改动的上游文件**（新增 `PendingDevices()` 转发）。升级 syncthing 时需重新核对 `Internals` 是否变化
