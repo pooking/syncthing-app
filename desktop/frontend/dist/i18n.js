@@ -38,6 +38,7 @@ const CATALOG = {
 
     // status
     'status.starting': 'starting',
+    'status.reload': 'Reload',
     'status.ready': 'up to date',
     'status.syncing': 'syncing',
     'status.paused': 'paused',
@@ -177,6 +178,7 @@ const CATALOG = {
     'tab.logs': '日志',
 
     'status.starting': '启动中',
+    'status.reload': '重新加载',
     'status.ready': '已同步',
     'status.syncing': '同步中',
     'status.paused': '已暂停',

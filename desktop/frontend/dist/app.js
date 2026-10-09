@@ -31,19 +31,25 @@ async function boot() {
   $('data-dir').title = await api().DataDir();
 
   rt().EventsOn('state', (json) => {
-    bootState = JSON.parse(json);
-    state = bootState;
-    render();
-    hideBootOnReady();
+    applyState(JSON.parse(json));
   });
   rt().EventsOn('dropped', (json) => showDropResult(JSON.parse(json)));
 
   wireBoot();
 
+  // Pull the snapshot once instead of waiting for the next event. Events are
+  // not buffered: the one the Go side emits at startup, which is the one that
+  // carries "ready", arrives before this listener exists and is lost. Without
+  // this the splash would wait for a state change that may never come.
+  applyState(JSON.parse(await api().GetState()));
+
   const setup = JSON.parse(await api().SetupStatus());
   await adoptLanguage();
   if (setup.needsSetup) {
     showWizard(setup);
+    // The wizard is a usable screen on its own, so it is shown even mid-start;
+    // this only adds a way out if the core never finishes coming up.
+    scheduleStuckHints();
     return;
   }
   await startApp();
@@ -60,33 +66,72 @@ let bootTimer = null;
 
 function wireBoot() {
   $('boot-anyway').addEventListener('click', () => hideBoot());
+  $('status-reload').addEventListener('click', () => location.reload());
 }
 
-// showBoot reveals the splash, unless the core is already known to be up.
-// Called by startApp, which has no reliable way to know how far along startup is.
+function applyState(snapshot) {
+  bootState = snapshot;
+  state = snapshot;
+  render();
+  hideBootOnReady();
+}
+
+// showBoot covers the UI, but only while the core is known to be starting. Once
+// it is up — or nothing is known at all, as during a frontend reload — the data
+// on screen is real and there is nothing to hide.
 function showBoot() {
-  if (bootState && bootState.phase !== 'starting') return;
+  if (!isStarting()) return;
   $('boot').classList.remove('hidden');
-  clearTimeout(bootTimer);
-  // A start that never completes must not trap the user behind the splash.
-  bootTimer = setTimeout(() => {
-    $('boot-detail').textContent = t('boot.slow');
-    $('boot-anyway').classList.remove('hidden');
-  }, 15000);
+  scheduleStuckHints();
 }
 
 function hideBoot() {
-  clearTimeout(bootTimer);
+  removeStuckHints();
   $('boot').classList.add('hidden');
 }
 
-// hideBootOnReady hides the splash once the core reports it is up. An unknown
-// state keeps the splash: it means no snapshot has arrived yet, which is exactly
-// the situation the splash exists for.
+// isStarting reports whether the core is still coming up.
+function isStarting() {
+  return bootState !== null && bootState.phase === 'starting';
+}
+
+// hideBootOnReady uncovers the UI as soon as the core reports itself up.
 function hideBootOnReady() {
-  if (!bootState || bootState.phase === 'starting') return false;
+  if (isStarting()) return false;
   hideBoot();
   return true;
+}
+
+// scheduleStuckHints offers a way out when startup drags on: whether the splash
+// can be dismissed, and whether reloading the view is worth trying.
+function scheduleStuckHints() {
+  clearTimeout(bootTimer);
+  bootTimer = setTimeout(() => {
+    $('boot-detail').textContent = t('boot.slow');
+    $('boot-anyway').classList.remove('hidden');
+    $('status-reload').classList.remove('hidden');
+  }, 15000);
+}
+
+function removeStuckHints() {
+  clearTimeout(bootTimer);
+  $('boot-anyway').classList.add('hidden');
+  $('status-reload').classList.add('hidden');
+}
+
+// watchUntilReady asks the Go side directly while the core is starting, so the
+// splash cannot stay up just because no state event arrived to clear it. It
+// stops on its own once the phase is known, and gives up after two minutes.
+async function watchUntilReady() {
+  for (let i = 0; i < 240 && isStarting(); i++) {
+    await new Promise((r) => setTimeout(r, 500));
+    if (!isStarting()) break;
+    try {
+      applyState(JSON.parse(await api().GetState()));
+    } catch (e) {
+      // The backend is not answering; the stuck hints cover that case.
+    }
+  }
 }
 
 // adoptLanguage asks the Go side whether the user picked a language (recorded
@@ -104,10 +149,11 @@ async function startApp() {
   await loadSettings();
   await refreshLogs();
   render();
-  // Discovery, the database and the first folder scan all happen after the
-  // window exists; cover them until the core says it is up.
+  // Discovery and the first scan continue after the window exists; cover them
+  // until the core says it is up.
   showBoot();
   hideBootOnReady();
+  watchUntilReady();
 }
 
 // ---- first-run wizard ----

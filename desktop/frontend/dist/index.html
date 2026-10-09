@@ -7,9 +7,10 @@
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-<!-- Startup splash: visible until the core reports itself ready, so the main
-     window is never shown with the configuration still empty. -->
-<div id="boot" class="boot">
+<!-- Startup splash: shown only while the core is starting, so the main window is
+     never seen with the configuration still empty. It starts hidden and every
+     path that shows it also hides it. -->
+<div id="boot" class="boot hidden">
   <div class="boot-card">
     <div class="boot-spinner" aria-hidden="true"></div>
     <h1 data-i18n="boot.title">Starting SyncthingApp…</h1>
@@ -56,6 +57,7 @@
     </div>
     <div class="status">
       <span class="pill" id="status-pill" data-i18n="status.starting">starting</span>
+      <button class="pill hidden" id="status-reload" data-i18n="status.reload">Reload</button>
       <span class="stat" id="status-detail"></span>
     </div>
   </header>
