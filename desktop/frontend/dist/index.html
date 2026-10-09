@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SyncthingApp</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div id="wizard" class="wizard hidden">
+  <div class="wizard-card">
+    <h1 data-i18n="wizard.title">Welcome to SyncthingApp</h1>
+    <p class="hint" data-i18n="wizard.subtitle">Two quick choices and you are ready to sync.</p>
+
+    <label class="field">
+      <span data-i18n="wizard.nameLabel">What should this device be called?</span>
+      <input type="text" id="wiz-name" data-i18n-ph="wizard.namePlaceholder" placeholder="My computer" />
+    </label>
+
+    <label class="field">
+      <span data-i18n="wizard.dirLabel">Where should shared folders live?</span>
+      <div class="row">
+        <input type="text" id="wiz-dir" readonly />
+        <button class="btn" id="wiz-pick" data-i18n="wizard.change">Change…</button>
+      </div>
+    </label>
+
+    <p class="hint" id="wiz-storage">—</p>
+
+    <div class="wizard-actions">
+      <button class="btn primary" id="wiz-done" data-i18n="wizard.done">Get started</button>
+    </div>
+    <p class="conflict hidden" id="wiz-error"></p>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo"></span>
+      <div>
+        <h1>SyncthingApp</h1>
+        <p class="sub" id="device-line">—</p>
+      </div>
+    </div>
+    <div class="status">
+      <span class="pill" id="status-pill" data-i18n="status.starting">starting</span>
+      <span class="stat" id="status-detail"></span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="folders" data-i18n="tab.folders">Folders</button>
+    <button class="tab" data-tab="devices" data-i18n="tab.devices">Devices</button>
+    <button class="tab" data-tab="settings" data-i18n="tab.settings">Settings</button>
+    <button class="tab" data-tab="logs" data-i18n="tab.logs">Logs</button>
+  </nav>
+
+  <main>
+    <!-- Folders -->
+    <section class="panel active" id="panel-folders">
+      <div class="dropzone" id="dropzone">
+        <strong data-i18n="folders.drop">Drop folders here to share them</strong>
+        <span><span data-i18n="folders.or">or</span> <button class="link" id="pick-folder" data-i18n="folders.choose">choose a folder</button></span>
+      </div>
+      <p class="conflict hidden" id="folder-conflict"></p>
+      <ul class="list" id="folder-list"></ul>
+      <p class="empty hidden" id="folders-empty" data-i18n="folders.empty">No folders shared yet. Drop one above to get started.</p>
+    </section>
+
+    <!-- Devices -->
+    <section class="panel" id="panel-devices">
+      <div class="card">
+        <h2 data-i18n="devices.thisDevice">This device</h2>
+        <div class="row">
+          <code class="id" id="my-id">—</code>
+          <button class="btn" id="copy-id" data-i18n="devices.copy">Copy</button>
+          <button class="btn" id="show-qr" data-i18n="devices.qr">QR code</button>
+        </div>
+        <p class="hint" data-i18n="devices.thisIdHint">Add this ID on your other device to pair with it.</p>
+        <div class="qr hidden" id="qr-box">
+          <img id="qr-img" data-i18n-alt="devices.qrAlt" alt="Device ID QR code" />
+          <p class="hint" data-i18n="devices.qrHint">Scan with the SyncthingApp camera on another device.</p>
+        </div>
+      </div>
+
+      <div class="card hidden" id="pending-card">
+        <h2 data-i18n="devices.waiting">Waiting to connect</h2>
+        <ul class="list" id="pending-devices"></ul>
+      </div>
+
+      <div class="card hidden" id="pending-folders-card">
+        <h2 data-i18n="devices.offered">Offered folders</h2>
+        <ul class="list" id="pending-folders"></ul>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="devices.addTitle">Add a device</h2>
+        <div class="row">
+          <input type="text" id="new-device-id" data-i18n-ph="devices.idPlaceholder" placeholder="Paste the device ID (e.g. ABCDEFG-…)" />
+          <input type="text" id="new-device-name" data-i18n-ph="devices.namePlaceholder" placeholder="Name (optional)" />
+          <button class="btn primary" id="add-device" data-i18n="devices.add">Add</button>
+        </div>
+        <p class="conflict hidden" id="device-error"></p>
+      </div>
+
+      <ul class="list" id="device-list"></ul>
+    </section>
+    <!-- Settings -->
+    <section class="panel" id="panel-settings">
+      <div class="card">
+        <h2 data-i18n="settings.general">General</h2>
+        <label class="field">
+          <span data-i18n="settings.deviceName">Device name</span>
+          <input type="text" id="set-name" />
+        </label>
+        <label class="field checkbox">
+          <input type="checkbox" id="set-autostart" />
+          <span data-i18n="settings.autostart">Start SyncthingApp when I sign in</span>
+        </label>
+        <label class="field">
+          <span data-i18n="settings.language">Language</span>
+          <select id="set-lang">
+            <option value="en">English</option>
+            <option value="zh">中文</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="settings.bandwidth">Bandwidth limits</h2>
+        <label class="field">
+          <span data-i18n="settings.maxSend">Max send rate (KB/s, 0 = unlimited)</span>
+          <input type="number" id="set-send" min="0" />
+        </label>
+        <label class="field">
+          <span data-i18n="settings.maxRecv">Max receive rate (KB/s, 0 = unlimited)</span>
+          <input type="number" id="set-recv" min="0" />
+        </label>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="settings.connectivity">Connectivity</h2>
+        <label class="field checkbox">
+          <input type="checkbox" id="set-relays" />
+          <span data-i18n="settings.relays">Use relays when a direct connection is not possible</span>
+        </label>
+        <label class="field checkbox">
+          <input type="checkbox" id="set-nat" />
+          <span data-i18n="settings.nat">Enable NAT traversal (UPnP)</span>
+        </label>
+      </div>
+
+      <div class="card">
+        <h2 data-i18n="settings.sharing">Sharing</h2>
+        <p class="hint" id="ports-line">—</p>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="save-settings" data-i18n="settings.save">Save settings</button>
+        <span class="saved hidden" id="settings-saved" data-i18n="settings.saved">Saved</span>
+      </div>
+
+      <div class="card danger">
+        <h2 data-i18n="settings.data">Data</h2>
+        <p class="hint" id="data-dir">—</p>
+        <button class="btn danger" id="quit-app" data-i18n="settings.quit">Quit SyncthingApp</button>
+      </div>
+    </section>
+
+    <!-- Logs -->
+    <section class="panel" id="panel-logs">
+      <div class="row">
+        <button class="btn" id="refresh-logs" data-i18n="logs.refresh">Refresh</button>
+        <span class="saved hidden" id="logs-updated" data-i18n="logs.updated">Updated</span>
+      </div>
+      <pre class="logs" id="logs"></pre>
+    </section>
+  </main>
+</div>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
