@@ -76,6 +76,10 @@ func (m *Internals) DeviceStatistics() (map[protocol.DeviceID]stats.DeviceStatis
 	return m.model.DeviceStatistics()
 }
 
+func (m *Internals) PendingDevices() (map[protocol.DeviceID]db.ObservedDevice, error) {
+	return m.model.PendingDevices()
+}
+
 func (m *Internals) PendingFolders(deviceID protocol.DeviceID) (map[string]db.PendingFolder, error) {
 	return m.model.PendingFolders(deviceID)
 }
