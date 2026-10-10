@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>SyncthingApp</title>
+<title>OspreySyncTool</title>
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,7 +13,7 @@
 <div id="boot" class="boot hidden">
   <div class="boot-card">
     <div class="boot-spinner" aria-hidden="true"></div>
-    <h1 data-i18n="boot.title">Starting SyncthingApp…</h1>
+    <h1 data-i18n="boot.title">Starting OspreySyncTool…</h1>
     <p class="hint" id="boot-detail" data-i18n="boot.detail">Loading the configuration and database.</p>
     <button class="btn hidden" id="boot-anyway" data-i18n="boot.showAnyway">Show the window anyway</button>
   </div>
@@ -21,7 +21,7 @@
 
 <div id="wizard" class="wizard hidden">
   <div class="wizard-card">
-    <h1 data-i18n="wizard.title">Welcome to SyncthingApp</h1>
+    <h1 data-i18n="wizard.title">Welcome to OspreySyncTool</h1>
     <p class="hint" data-i18n="wizard.subtitle">Two quick choices and you are ready to sync.</p>
 
     <label class="field">
@@ -52,7 +52,7 @@
     <div class="brand">
       <span class="logo"></span>
       <div>
-        <h1>SyncthingApp</h1>
+        <h1>OspreySyncTool</h1>
         <p class="sub" id="device-line">—</p>
       </div>
     </div>
@@ -94,7 +94,7 @@
         <p class="hint" data-i18n="devices.thisIdHint">Add this ID on your other device to pair with it.</p>
         <div class="qr hidden" id="qr-box">
           <img id="qr-img" data-i18n-alt="devices.qrAlt" alt="Device ID QR code" />
-          <p class="hint" data-i18n="devices.qrHint">Scan with the SyncthingApp camera on another device.</p>
+          <p class="hint" data-i18n="devices.qrHint">Scan with the OspreySyncTool camera on another device.</p>
         </div>
       </div>
 
@@ -130,7 +130,7 @@
         </label>
         <label class="field checkbox">
           <input type="checkbox" id="set-autostart" />
-          <span data-i18n="settings.autostart">Start SyncthingApp when I sign in</span>
+          <span data-i18n="settings.autostart">Start OspreySyncTool when I sign in</span>
         </label>
         <label class="field">
           <span data-i18n="settings.language">Language</span>
@@ -193,7 +193,7 @@
           <button class="btn" id="move-data" data-i18n="settings.dataDirMove">Move…</button>
         </div>
         <p class="conflict hidden" id="data-dir-error"></p>
-        <button class="btn danger" id="quit-app" data-i18n="settings.quit">Quit SyncthingApp</button>
+        <button class="btn danger" id="quit-app" data-i18n="settings.quit">Quit OspreySyncTool</button>
       </div>
     </section>
 

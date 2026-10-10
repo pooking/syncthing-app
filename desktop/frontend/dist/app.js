@@ -36,7 +36,7 @@ function panicScreen(text) {
   try {
     const el = $('boot');
     el.classList.remove('hidden');
-    el.innerHTML = '<div class="boot-card"><h1>SyncthingApp could not draw its window</h1>' +
+    el.innerHTML = '<div class="boot-card"><h1>OspreySyncTool could not draw its window</h1>' +
       '<p class="hint">This is a bug. Copy this and send it on:</p>' +
       '<pre class="logs" id="panic-text"></pre></div>';
     $('panic-text').textContent = String(text);

@@ -4,9 +4,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-// Command syncthing-app is the portable SyncthingApp. The P0 milestone ships a
-// headless harness used to validate embedded startup, folder sharing and
-// event aggregation before the GUI is layered on top.
+// Command syncthing-cli is the headless harness for OspreySyncTool. The P0
+// milestone ships a headless harness used to validate embedded startup, folder
+// sharing and event aggregation before the GUI is layered on top.
 package main
 
 import (

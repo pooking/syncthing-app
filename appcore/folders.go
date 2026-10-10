@@ -357,7 +357,7 @@ func validateFolderMoveTarget(current, target string) (string, error) {
 	if err := os.MkdirAll(dest, 0o755); err != nil {
 		return "", NewUserError(CodeFolderMoveWrite, err)
 	}
-	probe := filepath.Join(dest, ".syncthingapp-move-probe")
+	probe := filepath.Join(dest, ".ospreysynctool-move-probe")
 	if err := os.WriteFile(probe, []byte("ok"), 0o600); err != nil {
 		return "", NewUserError(CodeFolderMoveWrite, err)
 	}

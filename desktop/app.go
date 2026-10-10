@@ -45,7 +45,7 @@ type App struct {
 }
 
 // New starts the embedded core and returns the shell. The window is created by
-// the caller (cmd/syncthing-app) so this package stays free of main-package
+// the caller (cmd/osprey-sync-tool) so this package stays free of main-package
 // concerns.
 func New(opts Options) (*App, error) {
 	core, err := appcore.Start(appcore.Options{

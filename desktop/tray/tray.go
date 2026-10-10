@@ -50,8 +50,8 @@ func Run(h Handlers) error {
 			}
 		}()
 		systray.Run(func() {
-			systray.SetTitle("SyncthingApp")
-			systray.SetTooltip("SyncthingApp")
+			systray.SetTitle("OspreySyncTool")
+			systray.SetTooltip("OspreySyncTool")
 
 			menuOpen = systray.AddMenuItem(tr(h, appcore.CodeTrayOpen), "")
 			menuPause = systray.AddMenuItemCheckbox(tr(h, appcore.CodeTrayPause), "", false)

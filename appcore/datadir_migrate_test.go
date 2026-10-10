@@ -22,7 +22,7 @@ func TestResolveDataDirDefaultAndPointer(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", base)
 	t.Setenv("HOME", base)
 
-	if got, want := defaultDataDirForTest(t), filepath.Join(base, "SyncthingApp"); got != want {
+	if got, want := defaultDataDirForTest(t), filepath.Join(base, "OspreySyncTool"); got != want {
 		t.Fatalf("defaultDataDir() = %q, want %q", got, want)
 	}
 

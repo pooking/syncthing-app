@@ -10,7 +10,7 @@ package autostart
 
 // appName is the identity used in the registry key, launch agent and desktop
 // entry. It must stay stable so that Enable/Disable/IsEnabled agree.
-const appName = "SyncthingApp"
+const appName = "OspreySyncTool"
 
 // Enable registers the app to start at login.
 func Enable(exePath string, args []string) error {

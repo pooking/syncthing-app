@@ -1,4 +1,4 @@
-# SyncthingApp 开发计划（P3 及以后）
+# OspreySyncTool 开发计划（P3 及以后）
 
 > 记录时间：2026-10-09
 > 当前基线：仓库 HEAD `5fb192176`（未提交的 App 代码见下）
@@ -18,9 +18,9 @@
 ### 交付物
 
 ```
-E:\Dev\syncthing-app\dist\
-├── SyncthingApp-windows-amd64.zip     绿色便携包（分发这个）
-└── syncthing-app-windows-amd64.exe
+E:\Dev\OspreySyncTool\dist\
+├── OspreySyncTool-windows-amd64.zip     绿色便携包（分发这个）
+└── osprey-sync-tool-windows-amd64.exe
 ```
 
 构建：`go run -tags tools ./buildapp -zip`
@@ -50,7 +50,7 @@ E:\Dev\syncthing-app\dist\
 
 ### 其它已知问题 / 技术债
 
-- **日志无滚动**：`appcore/core.go` 用 `O_APPEND` 写 `syncthing-app.log`，永不切分，长期运行会无限增长
+- **日志无滚动**：`appcore/core.go` 用 `O_APPEND` 写 `osprey-sync-tool.log`，永不切分，长期运行会无限增长
 - **移动文件夹是整体复制后删除，没有进度条**：大目录跨盘移动时界面看起来像卡住了（`appcore/folders.go` 的 `moveFolderData`）。确认框里报了大小，但没有进度反馈；超大数据集需要考虑边移动边同步的方案
 - **消息模板少了占位符只能用眼睛看**：`t()` 把没给值的 `{name}` 原样留在文案里，不报错。`check.mjs` 现已静态校验「每个字面量 `t()` 调用都填满了对应文案里的占位符」，以及「带占位符的键都有人调用」（运行时拼接的 `folder.`/`code.` 前缀单独放行，并要求该前缀确实出现在某个 `t()` 拼接里）。Go 侧 `%v` 与调用实参个数的对应关系仍未校验，只能靠 `TestTranslateAllCodes` 那种「都渲染一次」的方式间接发现
 - **内建中转站的地址是编译期常量**：`appcore/hub.go` 的 `hubAddress = tcp://101.69.254.66:22000`。换服务器 / 换端口 / 改成域名都要重新发版；且该地址是明文写死在二进制里的。若以后要支持多入口或热切换，需要改成配置项 + 一次「内置默认值」的首次写入
@@ -60,7 +60,7 @@ E:\Dev\syncthing-app\dist\
 - **文件夹移动的「同盘=瞬时」判断是近似的**：Windows 按盘符，macOS 按 `/Volumes` 挂载点，Linux 按设备号（`filesystem_*.go`）。mkdir 挂载的同一盘符会被误判为同盘，结果只是多复制一次，不会出错
 - **数据目录迁移不搬共享文件夹**：这是有意的（共享文件夹可能在别的盘、体积很大），确认框里已写明；迁移只复制数据目录本身（config/cert/index-v2/log），旧目录保留作备份，需用户手动删
 - **迁移后 `locations` 里的文件夹模板路径不重写**：`config.xml` 原样复制，其中 `Defaults.Folder.Path` 指向旧数据目录下的 `Sync/`。已共享的文件夹不受影响（路径是绝对的），但「接受别人的文件夹」时的默认落地位置仍指向旧目录。`AcceptPendingFolder` 走的是 `DataDir()/Sync/<id>`（`desktop/app.go:403`），所以实际行为正确，只有模板值本身是陈旧的
-- ~~`dist/` 只被 `.gitignore` 的 `*.zip` 覆盖~~ 已核实：上游 `.gitignore` 同时含 `*.zip` 和 `*.exe`，`dist/` 下的产物全部被忽略，无需额外规则（早先看到的 `?? dist/` 来自一个构建残留文件 `syncthing-app-windows-amd64.exe~`，已删除）
+- ~~`dist/` 只被 `.gitignore` 的 `*.zip` 覆盖~~ 已核实：上游 `.gitignore` 同时含 `*.zip` 和 `*.exe`，`dist/` 下的产物全部被忽略，无需额外规则（早先看到的 `?? dist/` 来自一个构建残留文件 `osprey-sync-tool-windows-amd64.exe~`，已删除）
 - **macOS/Linux GUI 无法在本机交叉编译**：Wails 在 Linux 链接 GTK/WebKit、macOS 链接 Cocoa，`fyne.io/systray` 两端都是 cgo。`buildapp` 已能给出明确报错，但产物必须在对应平台构建
 - **`lib/syncthing/internals.go` 是唯一改动的上游文件**（新增 `PendingDevices()` 转发）。升级 syncthing 时需重新核对 `Internals` 是否变化
 
@@ -84,19 +84,19 @@ E:\Dev\syncthing-app\dist\
    - `Info.plist` 关键项：`CFBundleIdentifier`、`CFBundleIconFile`、`LSMinimumSystemVersion`
    - **不要**设 `LSUIElement=true`（需要主窗口）
    - codesign：先 ad-hoc（`-s -`），脚本预留 Developer ID + notarize 参数
-   - 自启动走 `~/Library/LaunchAgents/com.syncthingapp.launcher.plist`（代码已写）
+   - 自启动走 `~/Library/LaunchAgents/com.ospreysynctool.launcher.plist`（代码已写）
    - 注意：未签名包会被 Gatekeeper 拦，需在文档说明「右键打开」
 
 3. **Linux 打包**
    - AppImage（linuxdeploy）+ 随包 `libayatana-appindicator3.so`
    - `.desktop` 文件 + 图标安装到 `usr/share/`
-   - 兜底：`tar.gz{ binary, syncthingapp.desktop }`
-   - 自启动走 `~/.config/autostart/syncthingapp.desktop`（代码已写）
+   - 兜底：`tar.gz{ binary, ospreysynctool.desktop }`
+   - 自启动走 `~/.config/autostart/ospreysynctool.desktop`（代码已写）
 
 4. **平台适配验证点**
    - 托盘：GNOME 默认无托盘区，需 appindicator 扩展；Wayland 下也需实测
    - 拖放：Wayland 由 WebKitGTK 处理，需确认 `OnFileDrop` 有事件
-   - 数据目录：Linux `~/.local/state/syncthingapp`、macOS `~/Library/Application Support/SyncthingApp`（代码已写，未验证）
+   - 数据目录：Linux `~/.local/state/ospreysynctool`、macOS `~/Library/Application Support/OspreySyncTool`（代码已写，未验证）
    - 路径大小写：`samePath()` 已对 darwin 做 `EqualFold`，需在大小写敏感卷上确认行为
 
 ## 三、P4：Android
@@ -173,10 +173,10 @@ go run -tags tools ./buildapp -zip
 # 测试与检查
 go test ./appcore/...
 go vet -tags "noassets" ./appcore/... ./desktop/...
-gofmt -l appcore desktop buildapp cmd/syncthing-app cmd/syncthing-cli
+gofmt -l appcore desktop buildapp cmd/osprey-sync-tool cmd/syncthing-cli
 
 # 手工构建（两个 tag 缺一不可）
-go build -tags "noassets,production" -ldflags "-H windowsgui" -o app.exe ./cmd/syncthing-app
+go build -tags "noassets,production" -ldflags "-H windowsgui" -o app.exe ./cmd/osprey-sync-tool
 ```
 
 **两个 build tag 的作用**：

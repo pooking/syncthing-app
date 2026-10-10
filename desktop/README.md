@@ -1,4 +1,4 @@
-# SyncthingApp
+# OspreySyncTool
 
 A portable desktop app around an embedded Syncthing core: a small native window
 and a system tray icon instead of the web GUI. Drop folders onto the window to
@@ -19,7 +19,7 @@ cross-compiles from any machine and needs no runtime to install.
 | `desktop/frontend/dist/` | The UI (plain HTML/CSS/JS, no build step), embedded into the binary. |
 | `desktop/frontend/dist/i18n.js` | Translation catalog for everything the UI displays. |
 | `desktop/tray/` | Tray icon rendering and the status state machine. |
-| `cmd/syncthing-app/` | The desktop app entry point. |
+| `cmd/osprey-sync-tool/` | The desktop app entry point. |
 | `cmd/syncthing-cli/` | Headless harness for testing the core without a GUI. |
 | `buildapp/` | Packaging tool. |
 
@@ -35,8 +35,8 @@ go run -tags tools ./buildapp -zip
 Output lands in `dist/`:
 
 ```
-dist/SyncthingApp-windows-amd64.zip     portable archive (ship this)
-dist/syncthing-app-windows-amd64.exe    bare binary
+dist/OspreySyncTool-windows-amd64.zip     portable archive (ship this)
+dist/osprey-sync-tool-windows-amd64.exe    bare binary
 ```
 
 ### Flags
@@ -83,10 +83,10 @@ The desktop app needs two build tags and, on Windows, the GUI subsystem flag:
 
 ```bash
 # Windows
-go build -tags "noassets,production" -ldflags "-H windowsgui" -o app.exe ./cmd/syncthing-app
+go build -tags "noassets,production" -ldflags "-H windowsgui" -o app.exe ./cmd/osprey-sync-tool
 
 # Linux / macOS (CGO_ENABLED=1)
-go build -tags "noassets,production" -o app ./cmd/syncthing-app
+go build -tags "noassets,production" -o app ./cmd/osprey-sync-tool
 ```
 
 - `production` is required by Wails; without it Wails compiles a stub that only
@@ -112,12 +112,12 @@ where shared folders should live; both can be changed later in Settings.
 | Mode | Location |
 |---|---|
 | Portable | `Data/` beside the executable |
-| Windows | `%LocalAppData%\SyncthingApp` |
-| macOS | `~/Library/Application Support/SyncthingApp` |
-| Linux | `~/.local/state/syncthingapp` |
+| Windows | `%LocalAppData%\OspreySyncTool` |
+| macOS | `~/Library/Application Support/OspreySyncTool` |
+| Linux | `~/.local/state/ospreysynctool` |
 
 Portable mode turns on when the `-portable` flag is given **or** a file named
-`SyncthingApp.portable` sits next to the executable. The `-zip` archive includes
+`OspreySyncTool.portable` sits next to the executable. The `-zip` archive includes
 that marker, which is why the archive is the thing to distribute: extracting it
 gives a self-contained, self-updating-free folder.
 
@@ -187,7 +187,7 @@ reports the size so you can judge whether there is room.
 | `config.xml` | Syncthing configuration |
 | `cert.pem`, `key.pem` | device identity (the device ID derives from these) |
 | `index-v2/` | SQLite database |
-| `syncthing-app.log` | application log, also shown in the Logs tab |
+| `osprey-sync-tool.log` | application log, also shown in the Logs tab |
 | `syncthing.lock` | single-instance lock |
 | `.setup-complete` | written after the first-run wizard finishes |
 | `hub-device-adopted` | written once, when the built-in hub was paired; its presence is what leaves the device list alone afterwards |
@@ -339,7 +339,7 @@ go build -o cli ./cmd/syncthing-cli
 ```bash
 go test ./appcore/...
 go vet -tags "noassets" ./appcore/... ./desktop/...
-gofmt -l appcore desktop buildapp cmd/syncthing-app cmd/syncthing-cli
+gofmt -l appcore desktop buildapp cmd/osprey-sync-tool cmd/syncthing-cli
 
 # Frontend: parses, catalogs in step, every key resolves, and every t() call
 # fills the placeholders in the text it selects

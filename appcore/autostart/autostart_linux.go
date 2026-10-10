@@ -24,7 +24,7 @@ func desktopFilePath() (string, error) {
 		}
 		base = filepath.Join(home, ".config")
 	}
-	return filepath.Join(base, "autostart", "syncthingapp.desktop"), nil
+	return filepath.Join(base, "autostart", "ospreysynctool.desktop"), nil
 }
 
 func enable(exePath string, args []string) error {
@@ -42,7 +42,7 @@ func enable(exePath string, args []string) error {
 	}
 	content := "[Desktop Entry]\n" +
 		"Type=Application\n" +
-		"Name=SyncthingApp\n" +
+		"Name=OspreySyncTool\n" +
 		"Comment=Keep folders in sync between devices\n" +
 		"Exec=" + exec + "\n" +
 		"Terminal=false\n" +

@@ -10,16 +10,16 @@
 
 const CATALOG = {
   en: {
-    'app.name': 'SyncthingApp',
+    'app.name': 'OspreySyncTool',
 
     // startup splash
-    'boot.title': 'Starting SyncthingApp…',
+    'boot.title': 'Starting OspreySyncTool…',
     'boot.detail': 'Loading the configuration and database.',
     'boot.slow': 'This is taking longer than usual. The app is still working; you can look at the window meanwhile.',
     'boot.showAnyway': 'Show the window anyway',
 
     // wizard
-    'wizard.title': 'Welcome to SyncthingApp',
+    'wizard.title': 'Welcome to OspreySyncTool',
     'wizard.subtitle': 'Two quick choices and you are ready to sync.',
     'wizard.nameLabel': 'What should this device be called?',
     'wizard.namePlaceholder': 'My computer',
@@ -107,7 +107,7 @@ const CATALOG = {
     'devices.qr': 'QR code',
     'devices.qrAlt': 'Device ID QR code',
     'devices.thisIdHint': 'Add this ID on your other device to pair with it.',
-    'devices.qrHint': 'Scan with the SyncthingApp camera on another device.',
+    'devices.qrHint': 'Scan with the OspreySyncTool camera on another device.',
     'devices.waiting': 'Waiting to connect',
     'devices.offered': 'Offered folders',
     'devices.offeredBy': 'offered by {name}',
@@ -127,7 +127,7 @@ const CATALOG = {
     // settings
     'settings.general': 'General',
     'settings.deviceName': 'Device name',
-    'settings.autostart': 'Start SyncthingApp when I sign in',
+    'settings.autostart': 'Start OspreySyncTool when I sign in',
     'settings.language': 'Language',
     'settings.languageAuto': 'Follow system',
     'settings.bandwidth': 'Bandwidth limits',
@@ -153,7 +153,7 @@ const CATALOG = {
     'settings.dataDirPick': 'Choose the new data directory',
     'settings.dataDirConfirm': 'Copy the settings and database to {dir} and restart?\n\nShared folders themselves are NOT moved, and the old directory is left behind as a backup. The app closes and starts again.',
     'settings.dataDirFailed': 'Could not change the data directory: {err}',
-    'settings.quit': 'Quit SyncthingApp',
+    'settings.quit': 'Quit OspreySyncTool',
 
     // logs
     'logs.refresh': 'Refresh',
@@ -161,14 +161,14 @@ const CATALOG = {
   },
 
   zh: {
-    'app.name': 'SyncthingApp',
+    'app.name': 'OspreySyncTool',
 
-    'boot.title': '正在启动 SyncthingApp…',
+    'boot.title': '正在启动 OspreySyncTool…',
     'boot.detail': '正在加载配置和数据库。',
     'boot.slow': '比平常慢一些。程序还在启动，你可以先看看界面。',
     'boot.showAnyway': '仍然显示界面',
 
-    'wizard.title': '欢迎使用 SyncthingApp',
+    'wizard.title': '欢迎使用 OspreySyncTool',
     'wizard.subtitle': '两步设置，即可开始同步。',
     'wizard.nameLabel': '这台设备叫什么名字？',
     'wizard.namePlaceholder': '我的电脑',
@@ -249,7 +249,7 @@ const CATALOG = {
     'devices.qr': '二维码',
     'devices.qrAlt': '设备 ID 二维码',
     'devices.thisIdHint': '在另一台设备上填入这个 ID 即可配对。',
-    'devices.qrHint': '在另一台设备上用 SyncthingApp 扫描此二维码。',
+    'devices.qrHint': '在另一台设备上用 OspreySyncTool 扫描此二维码。',
     'devices.waiting': '等待连接',
     'devices.offered': '收到的文件夹邀请',
     'devices.offeredBy': '来自 {name}',
@@ -268,7 +268,7 @@ const CATALOG = {
 
     'settings.general': '常规',
     'settings.deviceName': '设备名称',
-    'settings.autostart': '开机时自动启动 SyncthingApp',
+    'settings.autostart': '开机时自动启动 OspreySyncTool',
     'settings.language': '界面语言',
     'settings.languageAuto': '跟随系统',
     'settings.bandwidth': '限速',
@@ -295,7 +295,7 @@ const CATALOG = {
     'settings.dataDirPick': '选择新的数据目录',
     'settings.dataDirConfirm': '把设置和数据库复制到 {dir} 并重启？\n\n共享的文件夹本身不会移动，旧目录会保留作为备份。程序会关闭后自动重新启动。',
     'settings.dataDirFailed': '无法更改数据目录：{err}',
-    'settings.quit': '退出 SyncthingApp',
+    'settings.quit': '退出 OspreySyncTool',
 
     'logs.refresh': '刷新',
     'logs.updated': '已更新',

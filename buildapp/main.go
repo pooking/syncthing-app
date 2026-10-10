@@ -6,7 +6,7 @@
 
 //go:build tools
 
-// Command buildapp packages SyncthingApp for the desktop platforms. It does not
+// Command buildapp packages OspreySyncTool for the desktop platforms. It does not
 // touch the upstream build.go behaviour; it only re-uses its conventions for
 // version stamping and Windows resources.
 //
@@ -33,9 +33,9 @@ import (
 )
 
 const (
-	appName    = "SyncthingApp"
-	binaryName = "syncthing-app"
-	mainPkg    = "./cmd/syncthing-app"
+	appName    = "OspreySyncTool"
+	binaryName = "osprey-sync-tool"
+	mainPkg    = "./cmd/osprey-sync-tool"
 	// desktopTags: "production" is required by Wails for manual `go build`
 	// (without it Wails compiles a stub that only shows an error dialog), and
 	// "noassets" skips embedding the unused upstream web GUI.

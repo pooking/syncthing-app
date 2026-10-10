@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-// Command syncthing-app is the portable desktop app: a small native window and
+// Command osprey-sync-tool is the portable desktop app: a small native window and
 // a tray icon wrapped around an embedded Syncthing core.
 package main
 
@@ -41,13 +41,13 @@ func main() {
 			// instance owns it. Wails' own single-instance lock normally
 			// prevents reaching this, but a second data directory means a
 			// genuine conflict worth reporting.
-			desktop.Fatal("SyncthingApp is already running", errors.New("another instance owns this data directory"))
+			desktop.Fatal("OspreySyncTool is already running", errors.New("another instance owns this data directory"))
 		}
-		desktop.Fatal("SyncthingApp could not start", err)
+		desktop.Fatal("OspreySyncTool could not start", err)
 	}
 
 	err = wails.Run(&options.App{
-		Title:             "SyncthingApp",
+		Title:             "OspreySyncTool",
 		Width:             980,
 		Height:            680,
 		MinWidth:          760,
@@ -64,7 +64,7 @@ func main() {
 		OnShutdown:        app.OnShutdown,
 		Bind:              []any{app},
 		SingleInstanceLock: &options.SingleInstanceLock{
-			UniqueId: "syncthingapp-main-window",
+			UniqueId: "ospreysynctool-main-window",
 			OnSecondInstanceLaunch: func(options.SecondInstanceData) {
 				// A second launch just reveals the window of the first one.
 				app.ShowWindow()
@@ -77,6 +77,6 @@ func main() {
 		},
 	})
 	if err != nil {
-		desktop.Fatal("SyncthingApp stopped unexpectedly", err)
+		desktop.Fatal("OspreySyncTool stopped unexpectedly", err)
 	}
 }

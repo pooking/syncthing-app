@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-const label = "com.syncthingapp.launcher"
+const label = "com.ospreysynctool.launcher"
 
 func plistPath() (string, error) {
 	home, err := os.UserHomeDir()

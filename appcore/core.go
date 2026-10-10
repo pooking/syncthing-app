@@ -115,7 +115,7 @@ func Start(opts Options) (*App, error) {
 	}
 	a.loadPrefs()
 
-	slog.Info("Starting SyncthingApp", "dataDir", a.dataDir, "portable", a.opts.Portable, "os", runtime.GOOS)
+	slog.Info("Starting OspreySyncTool", "dataDir", a.dataDir, "portable", a.opts.Portable, "os", runtime.GOOS)
 
 	cert, err := syncthing.LoadOrGenerateCertificate(
 		locations.Get(locations.CertFile),
@@ -196,7 +196,7 @@ func Start(opts Options) (*App, error) {
 	a.state.SetInternals(a.st.Internals)
 	a.state.Refresh()
 
-	slog.Info("SyncthingApp ready", "deviceID", a.cfg.MyID().String())
+	slog.Info("OspreySyncTool ready", "deviceID", a.cfg.MyID().String())
 	return a, nil
 }
 
@@ -279,7 +279,7 @@ func (a *App) unlock() {
 
 // portableMarker is the file next to the executable that switches the app into
 // portable mode.
-const portableMarker = "SyncthingApp.portable"
+const portableMarker = "OspreySyncTool.portable"
 
 // PortableRequested reports whether the layout next to the executable asks for
 // portable mode.
@@ -339,14 +339,14 @@ func defaultDataDir() (string, error) {
 		if base == "" {
 			base = filepath.Join(home, "AppData", "Local")
 		}
-		return filepath.Join(base, "SyncthingApp"), nil
+		return filepath.Join(base, "OspreySyncTool"), nil
 	case "darwin":
-		return filepath.Join(home, "Library", "Application Support", "SyncthingApp"), nil
+		return filepath.Join(home, "Library", "Application Support", "OspreySyncTool"), nil
 	default:
 		if state := os.Getenv("XDG_STATE_HOME"); state != "" {
-			return filepath.Join(state, "syncthingapp"), nil
+			return filepath.Join(state, "ospreysynctool"), nil
 		}
-		return filepath.Join(home, ".local", "state", "syncthingapp"), nil
+		return filepath.Join(home, ".local", "state", "ospreysynctool"), nil
 	}
 }
 
@@ -360,7 +360,7 @@ func (a *App) setupLogging() error {
 		writers = append(writers, a.opts.LogWriter)
 	} else {
 		f, err := os.OpenFile(
-			filepath.Join(a.dataDir, "syncthing-app.log"),
+			filepath.Join(a.dataDir, "osprey-sync-tool.log"),
 			os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600,
 		)
 		if err != nil {
