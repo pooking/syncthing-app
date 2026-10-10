@@ -272,8 +272,7 @@ go build -o cli ./cmd/syncthing-cli
 | `-accept-wait D` | how long to wait for them (default 20s) |
 | `-move-id ID` | folder to relocate (with `-move-folder`) |
 | `-move-folder DIR` | move that folder's data to `DIR` |
-| `-dump` | print the state snapshot as JSON and exit |
-| `-quiet` | suppress the periodic state line |
+| `-dump` | print the state snapshot as JSON and exit || `-quiet` | suppress the periodic state line |
 
 ## Development
 
@@ -282,9 +281,32 @@ go test ./appcore/...
 go vet -tags "noassets" ./appcore/... ./desktop/...
 gofmt -l appcore desktop buildapp cmd/syncthing-app cmd/syncthing-cli
 
-# Frontend checks: parses, catalogs in step, every key resolves
+# Frontend: parses, catalogs in step, every key resolves
 node desktop/frontend/dist/check.mjs
+
+# Frontend: boots against a stubbed DOM and reports which screen is visible,
+# which is how a blank window is caught without opening one
+node desktop/frontend/dist/rendercheck.mjs
 ```
+
+### When the window is blank
+
+The frontend journals each startup step through the `BootLog` binding, and the
+log records that the page loaded at all:
+
+```
+INF Frontend loaded
+INF Frontend boot step=start
+INF Frontend boot step=identity ok
+INF Frontend boot step=events wired
+INF Frontend boot step=state ready
+INF Frontend boot step=rendered
+```
+
+The last line present says where it stopped. If `Frontend loaded` is missing, the
+page never got that far — the fault is in the webview or the asset server, not in
+the UI code. A hard failure is also drawn into the window itself by
+`panicScreen`, so a broken build shows its error rather than nothing.
 
 The frontend has no build step: edit `desktop/frontend/dist/` and rebuild. It
 only renders state the Go side pushes, so it holds no logic — the same markup is

@@ -17,18 +17,44 @@ let myID = '';
 const $ = (id) => document.getElementById(id);
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Last line of defence for a blank window. A failure below would otherwise
+  // leave every screen hidden with nothing to show for it, and a GUI build has
+  // no console to report to, so the panic screen is written into the document
+  // itself. Nothing here is async: the handler must not miss a synchronous
+  // throw before the first await.
   wireTabs();
   wireActions();
   wireWizard();
-  boot();
+  window.addEventListener('error', (e) => panicScreen(e.message + '\n' + (e.error?.stack || '')));
+  window.addEventListener('unhandledrejection', (e) => panicScreen(String(e.reason)));
+  boot().catch((e) => panicScreen((e && e.stack) || String(e)));
 });
 
+// panicScreen shows whatever went wrong in place of the UI, so a failure is
+// readable instead of blank. Selecting the window and pressing Ctrl+C copies it.
+function panicScreen(text) {
+  try {
+    const el = $('boot');
+    el.classList.remove('hidden');
+    el.innerHTML = '<div class="boot-card"><h1>SyncthingApp could not draw its window</h1>' +
+      '<p class="hint">This is a bug. Copy this and send it on:</p>' +
+      '<pre class="logs" id="panic-text"></pre></div>';
+    $('panic-text').textContent = String(text);
+  } catch (e) {
+    // Nothing else can be done from inside a broken document.
+  }
+}
+
 async function boot() {
+  // Each step is journaled, because a GUI build has no console: if the window
+  // ends up empty, this is what says which step it stopped at.
+  bootLog('start');
   myID = await api().DeviceID();
   $('my-id').textContent = myID;
   $('device-line').textContent = `${await api().ShortDeviceID()} · ${await api().DataDir()}`;
   $('data-dir').textContent = await api().DataDir();
   $('data-dir').title = await api().DataDir();
+  bootLog('identity ok');
 
   rt().EventsOn('state', (json) => {
     applyState(JSON.parse(json));
@@ -36,23 +62,40 @@ async function boot() {
   rt().EventsOn('dropped', (json) => showDropResult(JSON.parse(json)));
 
   wireBoot();
+  bootLog('events wired');
 
   // Pull the snapshot once instead of waiting for the next event. Events are
   // not buffered: the one the Go side emits at startup, which is the one that
   // carries "ready", arrives before this listener exists and is lost. Without
   // this the splash would wait for a state change that may never come.
-  applyState(JSON.parse(await api().GetState()));
+  const snapshot = await api().GetState();
+  bootLog(`state ${JSON.parse(snapshot).phase}`);
+  applyState(JSON.parse(snapshot));
+  bootLog('rendered');
 
   const setup = JSON.parse(await api().SetupStatus());
   await adoptLanguage();
+  bootLog('language ok');
   if (setup.needsSetup) {
     showWizard(setup);
     // The wizard is a usable screen on its own, so it is shown even mid-start;
     // this only adds a way out if the core never finishes coming up.
     scheduleStuckHints();
+    bootLog('wizard shown');
     return;
   }
   await startApp();
+  bootLog('done');
+}
+
+// bootLog appends a line to the app log through a Go binding. It is best effort:
+// a failure to log must never be the reason the window stays blank.
+function bootLog(step) {
+  try {
+    api().BootLog(step);
+  } catch (e) {
+    // Older builds have no such binding; the journal is not essential.
+  }
 }
 
 // ---- startup splash ----
@@ -71,9 +114,21 @@ function wireBoot() {
 
 function applyState(snapshot) {
   bootState = snapshot;
-  state = snapshot;
+  state = normalise(snapshot);
   render();
   hideBootOnReady();
+}
+
+// normalise guarantees the arrays the renderers iterate over. Go marshals a nil
+// slice as null, and the pending lists are nil until something is offered, so
+// without this a render would throw on null.length and never finish — which
+// shows up as an empty window.
+function normalise(s) {
+  if (!s) return state;
+  for (const key of ['folders', 'devices', 'pendingDevices', 'pendingFolders', 'errors']) {
+    if (!Array.isArray(s[key])) s[key] = [];
+  }
+  return s;
 }
 
 // showBoot covers the UI, but only while the core is known to be starting. Once

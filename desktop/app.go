@@ -12,6 +12,7 @@ package desktop
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sync"
@@ -86,7 +87,15 @@ func (a *App) OnStartup(ctx context.Context) {
 
 // OnDomReady is called once the frontend has loaded.
 func (a *App) OnDomReady(_ context.Context) {
+	slog.Info("Frontend loaded")
 	a.emit("ready", "{}")
+}
+
+// BootLog records a frontend startup step in the app log. A GUI build has no
+// console, so when the window comes up empty this journal is what says how far
+// the frontend got. Failures are not the caller's problem.
+func (a *App) BootLog(step string) {
+	slog.Info("Frontend boot", "step", step)
 }
 
 // OnBeforeClose intercepts the window close button and hides the window
