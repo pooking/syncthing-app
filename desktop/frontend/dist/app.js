@@ -448,7 +448,9 @@ async function moveFolder(f) {
   }
   if (!check || check.bytes === undefined) check = { ...check, bytes: 0 };
 
-  const params = { target: check.target, files: check.files, size: formatBytes(check.bytes) };
+  // Every message below names the folder, so the name has to be in here; a
+  // missing key is not an error, it just leaves "{name}" in the dialog.
+  const params = { name, target: check.target, files: check.files, size: formatBytes(check.bytes) };
   if (check.targetExists) {
     if (!confirm(t('folders.moveMergeConfirm', params))) return;
   } else if (!confirm(t('folders.moveConfirm', params))) {

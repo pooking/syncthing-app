@@ -63,8 +63,8 @@ const CATALOG = {
     'folders.move': 'Move…',
     'folders.movePick': 'Choose the new location for "{name}"',
     'folders.moveConfirm': 'Move "{name}" to:\n\n{target}\n\n{files} file(s), {size}. The files are copied and then removed from the old location. Shared folders are not affected on other devices.',
-    'folders.moveMergeConfirm': 'Move "{name}" to:\n\n{target}\n\nThat directory already has files in it. They will be merged with the folder\'s own files, and anything left over there stays.\n\n{files} file(s), {size}. The files are copied and then removed from the old location.',
-    'folders.moveReplaceConfirm': 'Delete files in {target} that are not part of "{name}"? Choose No to keep them.',
+    'folders.moveMergeConfirm': 'Move "{name}" to:\n\n{target}\n\nThat directory already has files in it. They will be merged with the folder\'s own files.\n\n{files} file(s), {size}. The files are copied and then removed from the old location.',
+    'folders.moveReplaceConfirm': 'There are files in {target} that are not part of "{name}". Delete them? Choose No to keep them.',
     'folders.moveFailed': 'Could not move the folder: {err}',
 
     // folder states
@@ -202,8 +202,8 @@ const CATALOG = {
     'folders.move': '移动…',
     'folders.movePick': '为“{name}”选择新位置',
     'folders.moveConfirm': '把“{name}”移动到：\n\n{target}\n\n{files} 个文件，{size}。文件会被复制过去，然后从原位置删除。其他设备上的共享不受影响。',
-    'folders.moveMergeConfirm': '把“{name}”移动到：\n\n{target}\n\n该目录里已经有文件，会与这个文件夹的内容合并，多出来的文件原地保留。\n\n{files} 个文件，{size}。文件会被复制过去，然后从原位置删除。',
-    'folders.moveReplaceConfirm': '删除 {target} 中不属于“{name}”的文件？选“否”则保留。',
+    'folders.moveMergeConfirm': '把“{name}”移动到：\n\n{target}\n\n该目录里已经有文件，会与这个文件夹的内容合并。\n\n{files} 个文件，{size}。文件会被复制过去，然后从原位置删除。',
+    'folders.moveReplaceConfirm': '合并后，删除 {target} 中不属于“{name}”的文件？选“否”则保留。',
     'folders.moveFailed': '移动文件夹失败：{err}',
 
     'folder.paused': '已暂停',

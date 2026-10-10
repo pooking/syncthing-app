@@ -281,7 +281,8 @@ go test ./appcore/...
 go vet -tags "noassets" ./appcore/... ./desktop/...
 gofmt -l appcore desktop buildapp cmd/syncthing-app cmd/syncthing-cli
 
-# Frontend: parses, catalogs in step, every key resolves
+# Frontend: parses, catalogs in step, every key resolves, and every t() call
+# fills the placeholders in the text it selects
 node desktop/frontend/dist/check.mjs
 
 # Frontend: boots against a stubbed DOM and reports which screen is visible,
@@ -311,3 +312,12 @@ the UI code. A hard failure is also drawn into the window itself by
 The frontend has no build step: edit `desktop/frontend/dist/` and rebuild. It
 only renders state the Go side pushes, so it holds no logic — the same markup is
 intended to be reusable by a mobile shell later.
+
+### When a dialog shows `{name}`
+
+`t()` substitutes the values it is given and leaves the rest of the text alone,
+so a `t()` call that forgets one of the placeholders its message uses puts the
+braces in front of the user. `check.mjs` checks this statically for literal keys,
+in both directions: a call that leaves a placeholder unfilled, and a templated
+message that no call asks for at all. Neither is an error at runtime, which is
+why it needs a check rather than a guard.

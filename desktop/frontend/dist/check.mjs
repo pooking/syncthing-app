@@ -35,6 +35,73 @@ const htmlKeys = [...html.matchAll(/data-i18n(?:-ph|-title|-alt)?="([^"]+)"/g)].
 const badHtml = htmlKeys.filter((k) => !(k in CATALOG.en));
 check(`all ${htmlKeys.length} markup keys resolve`, !badHtml.length, badHtml.join(', '));
 
+// A t() call with a literal key must supply a value for every {placeholder} in
+// the text it selects. Missing one is not an error the code can throw: t()
+// substitutes what it is given and leaves the rest alone, so the placeholder
+// reaches the user verbatim — which is how "不属于"{name}"的文件" got into a
+// confirmation dialog. Only literal keys are checked; calls that build the key
+// at runtime ("folder." + state) cannot be resolved here.
+const app = read('app.js');
+
+// Params objects assigned to a name first, so `t(key, params)` resolves too.
+const paramsObjects = new Map();
+for (const m of app.matchAll(/(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*\{([^{}]*)\}/g)) {
+  paramsObjects.set(m[1], m[2]);
+}
+
+function suppliedNames(arg) {
+  const body = arg.startsWith('{') ? arg.slice(1, -1) : paramsObjects.get(arg);
+  if (body === undefined) return null; // built elsewhere; not resolvable statically
+  const names = new Set();
+  for (const part of body.split(',')) {
+    const named = part.match(/^\s*([A-Za-z_$][\w$]*)\s*:/);
+    if (named) { names.add(named[1]); continue; }
+    const shorthand = part.match(/^\s*([A-Za-z_$][\w$]*)\s*$/);
+    if (shorthand) names.add(shorthand[1]);
+  }
+  return names;
+}
+
+const unfilled = [];
+let callsChecked = 0;
+for (const m of app.matchAll(/\bt\(\s*'([^']+)'\s*,\s*(\{[^{}]*\}|[A-Za-z_$][\w$]*)\s*\)/g)) {
+  const supplied = suppliedNames(m[2]);
+  if (!supplied) continue;
+  callsChecked++;
+  for (const lang of ['en', 'zh']) {
+    const text = CATALOG[lang][m[1]];
+    if (text === undefined) continue;
+    for (const ph of new Set([...text.matchAll(/\{(\w+)\}/g)].map((p) => p[1]))) {
+      if (!supplied.has(ph)) unfilled.push(`${m[1]} (${lang}) has no value for {${ph}}`);
+    }
+  }
+}
+check(`${callsChecked} t() calls fill every placeholder their text uses`,
+  !unfilled.length, unfilled.join(', '));
+
+// A message key holding a {placeholder} and asked for by nobody would ship the
+// braces verbatim too, so an unused one is dead weight rather than harmless.
+// Keys whose name is built at runtime are not literal calls; each prefix here
+// has to actually appear concatenated inside a t() call, so this exception list
+// cannot quietly grow into a hole.
+const literalKeys = new Set([...app.matchAll(/\bt\(\s*'([^']+)'/g)].map((m) => m[1]));
+const RUNTIME_PREFIXES = ['folder.', 'code.'];
+const unbacked = RUNTIME_PREFIXES.filter((p) => !app.includes(`t('${p}' +`));
+check('every runtime key prefix is really built at runtime',
+  !unbacked.length, `${unbacked.join(', ')} is not concatenated into any t() call`);
+
+const orphan = [];
+for (const lang of ['en', 'zh']) {
+  for (const [key, text] of Object.entries(CATALOG[lang])) {
+    if (!/\{\w+\}/.test(text)) continue;
+    if (literalKeys.has(key)) continue;
+    if (RUNTIME_PREFIXES.some((p) => key.startsWith(p))) continue;
+    orphan.push(`${key} (${lang})`);
+  }
+}
+check('every templated key is asked for by a literal t() call',
+  !orphan.length, orphan.join(', '));
+
 // Folder state names are built at runtime as "folder." + state, so they are not
 // visible to a plain t() search; check them against the states the Go side emits.
 const stateNames = ['paused', 'idle', 'scanning', 'syncing', 'syncPreparing', 'error',
