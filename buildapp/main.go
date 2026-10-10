@@ -213,17 +213,15 @@ func stampWindowsResources(exePath, ver string) error {
 	if err != nil {
 		return err
 	}
-	// It goes in under both names Windows looks an application icon up by.
+	// It goes in under the name Wails looks an application icon up by.
 	//
-	// ID 1 is the convention every resource compiler follows, and it is what
-	// Explorer, the shell and LoadIcon reach for — this is the icon on the file
-	// itself. ID 3 is what Wails asks for when it sets the window's icon, and
-	// its lookup failure is silent: register only ID 1 and the executable shows
-	// its own icon in Explorer while the window and the taskbar button show the
-	// generic one.
-	if err := rs.SetIcon(winres.ID(1), ico); err != nil {
-		return err
-	}
+	// ID 3 is winc.AppIconID. Its lookup failure is silent, and nothing else in
+	// the app ever registers a window class icon, so this resource is the only
+	// icon the title bar and the taskbar button have to work with. ID 1 — the
+	// convention every resource compiler follows — is deliberately *not* also
+	// registered: two groups doubled the resource section for no benefit, and
+	// there is a limit to how much a PE section can hold before Windows stops
+	// reading it.
 	if err := rs.SetIcon(winres.ID(wailsAppIconID), ico); err != nil {
 		return err
 	}

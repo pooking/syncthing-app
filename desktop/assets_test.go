@@ -14,7 +14,7 @@ import (
 
 // The mark is drawn in code, and the interface embeds a copy of it that was
 // written out at some point. Nothing at run time notices when the two drift
-// apart: the header would just keep showing the older feather. This is the
+// apart: the header would just keep showing the older drawing. This is the
 // check that catches it, in the same spirit as the frontend's catalog checks.
 func TestEmbeddedMarkMatchesTheCode(t *testing.T) {
 	onDisk, err := Assets.ReadFile("frontend/dist/mark.svg")

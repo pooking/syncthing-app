@@ -18,7 +18,7 @@ cross-compiles from any machine and needs no runtime to install.
 | `desktop/` | Wails v2 shell: window, tray, and the bindings the frontend calls. |
 | `desktop/frontend/dist/` | The UI (plain HTML/CSS/JS, no build step), embedded into the binary. |
 | `desktop/frontend/dist/i18n.js` | Translation catalog for everything the UI displays. |
-| `desktop/brand/` | The mark: a feather, drawn in code. Every icon the app shows comes from here. |
+| `desktop/brand/` | The mark: an owl, drawn in code. Every icon the app shows comes from here. |
 | `desktop/tray/` | Tray icon rendering and the status state machine. |
 | `cmd/osprey-sync-tool/` | The desktop app entry point. |
 | `cmd/syncthing-cli/` | Headless harness for testing the core without a GUI. |

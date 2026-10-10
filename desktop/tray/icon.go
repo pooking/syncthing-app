@@ -51,8 +51,8 @@ var palette = map[Status]color.NRGBA{
 	StatusOffline: {R: 0x8a, G: 0x8a, B: 0x8a, A: 0xff}, // grey
 }
 
-// IconPNG renders the status icon: the app's feather, filled in the status
-// colour, so the tray says what the app is doing in the app's own shape.
+// IconPNG renders the status icon: the app's owl, in the status colour, so the
+// tray says what the app is doing in the app's own shape.
 func IconPNG(status Status, size int) []byte {
 	return brand.PNG(size, brand.SolidTheme(palette[status]))
 }
