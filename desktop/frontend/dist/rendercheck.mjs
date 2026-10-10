@@ -84,8 +84,10 @@ function load(scenario) {
         GetState: async () => JSON.stringify(scenario.snapshot),
         SetupStatus: async () => JSON.stringify(scenario.setup),
         GetSettings: async () => JSON.stringify({ language: 'en' }),
-        ListeningPorts: async () => '[]',
-        GetLogs: async () => '[]',
+        // Go marshals a nil slice as null, and these two are nil until
+        // something populates them; scenario.nilLists reproduces that.
+        ListeningPorts: async () => (scenario.nilLists ? 'null' : '[]'),
+        GetLogs: async () => (scenario.nilLists ? 'null' : '[]'),
         BootLog: (step) => { bootLog.push(step); },
       } } },
       runtime: { EventsOn() {} },
@@ -158,8 +160,8 @@ function check(name, ok, detail = '') {
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${!ok && detail ? `  — ${detail}` : ''}`);
 }
 
-async function run(label, snapshot, setup) {
-  const { sandbox, get, bootLog } = load({ snapshot, setup, deviceID: DEVICE });
+async function run(label, snapshot, setup, nilLists = true) {
+  const { sandbox, get, bootLog } = load({ snapshot, setup, deviceID: DEVICE, nilLists });
   let threw = '';
   try {
     await sandbox._domReady();
@@ -179,6 +181,7 @@ const cases = [
   ['configured instance, core still starting', { ...CONFIGURED, phase: 'starting' }, NO_SETUP],
   ['nothing offered yet (nil pending lists)', FRESH, NO_SETUP],
   ['first run, wizard needed', FRESH, WANTS_SETUP],
+  ['every Go list marshalled as null', CONFIGURED, NO_SETUP],
 ];
 
 for (const [label, snapshot, setup] of cases) {

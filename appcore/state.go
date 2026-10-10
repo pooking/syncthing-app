@@ -453,8 +453,9 @@ func (s *StateBridge) rebuildStatic() {
 		}
 	}
 
-	// Pending folders offered by known devices.
-	var pf []PendingFolder
+	// Pending folders offered by known devices. Initialised rather than left
+	// nil: this travels to the UI as JSON, where null is not an empty list.
+	pf := make([]PendingFolder, 0)
 	if internals != nil {
 		for _, d := range devices {
 			if d.DeviceID == myID {

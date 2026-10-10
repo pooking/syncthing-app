@@ -119,6 +119,14 @@ function applyState(snapshot) {
   hideBootOnReady();
 }
 
+// asArray turns a Go slice that marshalled as null into an empty array. Go
+// marshals a nil slice as null, and several of the lists the Go side sends are
+// nil until something populates them, so any read of .length or .map on them
+// would throw and take the rest of the caller with it.
+function asArray(v) {
+  return Array.isArray(v) ? v : [];
+}
+
 // normalise guarantees the arrays the renderers iterate over. Go marshals a nil
 // slice as null, and the pending lists are nil until something is offered, so
 // without this a render would throw on null.length and never finish — which
@@ -126,7 +134,7 @@ function applyState(snapshot) {
 function normalise(s) {
   if (!s) return state;
   for (const key of ['folders', 'devices', 'pendingDevices', 'pendingFolders', 'errors']) {
-    if (!Array.isArray(s[key])) s[key] = [];
+    s[key] = asArray(s[key]);
   }
   return s;
 }
@@ -438,6 +446,7 @@ async function moveFolder(f) {
     alert(t('folders.moveFailed', { err: e }));
     return;
   }
+  if (!check || check.bytes === undefined) check = { ...check, bytes: 0 };
 
   const params = { target: check.target, files: check.files, size: formatBytes(check.bytes) };
   if (check.targetExists) {
@@ -590,7 +599,7 @@ function showDropResult(res) {
 }
 
 async function loadSettings() {
-  const ports = JSON.parse(await api().ListeningPorts());
+  const ports = asArray(JSON.parse(await api().ListeningPorts()));
   $('ports-line').textContent = ports.length
     ? t('settings.ports', { ports: ports.join(', ') })
     : t('settings.noPorts');
@@ -606,7 +615,7 @@ async function loadSettings() {
 }
 
 async function refreshLogs() {
-  const lines = JSON.parse(await api().GetLogs(400));
+  const lines = asArray(JSON.parse(await api().GetLogs(400)));
   const el = $('logs');
   el.textContent = lines.join('\n');
   el.scrollTop = el.scrollHeight;

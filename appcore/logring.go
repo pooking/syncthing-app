@@ -60,8 +60,10 @@ func (r *RingBuffer) Lines(limit int) []string {
 	if limit > 0 && len(r.lines) > limit {
 		start = len(r.lines) - limit
 	}
-	out := make([]string, len(r.lines)-start)
-	copy(out, r.lines[start:])
+	// Never nil: this goes straight to the UI, which treats a null as "not a
+	// list" rather than as an empty one.
+	out := make([]string, 0, len(r.lines)-start)
+	out = append(out, r.lines[start:]...)
 	return out
 }
 

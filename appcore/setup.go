@@ -140,9 +140,11 @@ func (a *App) DeviceIDQRCode() string {
 }
 
 // ListeningPorts returns the TCP ports from the configured listen addresses.
+// The result is never nil: it is marshalled straight to the UI, where a null
+// would read as "not a list" and break the code that counts the entries.
 func (a *App) ListeningPorts() []int {
 	opts := a.cfg.Options()
-	var ports []int
+	ports := []int{}
 	for _, addr := range opts.RawListenAddresses {
 		if p := portFromAddress(addr); p > 0 {
 			ports = append(ports, p)
