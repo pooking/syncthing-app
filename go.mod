@@ -36,6 +36,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.26.7
 	github.com/syncthing/notify v0.0.0-20250528144937-c7027d4f7465
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d
+	github.com/tc-hib/winres v0.3.1
 	github.com/thejerf/suture/v4 v4.0.6
 	github.com/urfave/cli v1.22.17
 	github.com/vitrun/qart v0.0.0-20160531060029-bf64b92db6b0
@@ -44,6 +45,7 @@ require (
 	github.com/wlynxg/anet v0.0.5
 	golang.org/x/crypto v0.55.0
 	golang.org/x/exp v0.0.0-20260813180055-c1d0aacb2297
+	golang.org/x/image v0.41.0
 	golang.org/x/net v0.58.0
 	golang.org/x/sys v0.47.0
 	golang.org/x/text v0.41.0
@@ -86,6 +88,7 @@ require (
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.12.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nxadm/tail v1.4.11 // indirect
 	github.com/oschwald/maxminddb-golang v1.13.1 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect

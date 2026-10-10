@@ -18,6 +18,7 @@ cross-compiles from any machine and needs no runtime to install.
 | `desktop/` | Wails v2 shell: window, tray, and the bindings the frontend calls. |
 | `desktop/frontend/dist/` | The UI (plain HTML/CSS/JS, no build step), embedded into the binary. |
 | `desktop/frontend/dist/i18n.js` | Translation catalog for everything the UI displays. |
+| `desktop/brand/` | The mark: a feather, drawn in code. Every icon the app shows comes from here. |
 | `desktop/tray/` | Tray icon rendering and the status state machine. |
 | `cmd/osprey-sync-tool/` | The desktop app entry point. |
 | `cmd/syncthing-cli/` | Headless harness for testing the core without a GUI. |
@@ -25,6 +26,40 @@ cross-compiles from any machine and needs no runtime to install.
 
 The only change to upstream code is two forwarding methods added to
 `lib/syncthing/internals.go`.
+
+## The mark
+
+The app's icon is a feather, for the osprey it is named after. It is not an
+image file: `desktop/brand/` draws it, and everything that shows it takes the
+same geometry.
+
+```bash
+# Look at it: writes an HTML sheet with every size, both icon forms, and the
+# tray in every status colour, on a light and a dark panel.
+go run -tags tools ./desktop/brand/preview
+
+# Regenerate the committed copies after changing the geometry.
+go run -tags tools ./desktop/brand/preview -write
+```
+
+Two forms come out of the one shape:
+
+- **Tile** — the feather in white on a rounded blue square. This is the
+  application icon: the file's icon in Explorer, the taskbar button, the window's
+  title bar, and the boot splash. A bare shape on a transparent square is hard to
+  pick out at 16 pixels in a taskbar; a solid tile is not.
+- **Mark** — the bare feather. This is the tray icon, in the status colour, and
+  the logo in the window's header. It is also `desktop/frontend/dist/mark.svg`,
+  which the interface embeds directly.
+
+Below 32 pixels the quill and the gaps between the barbs are dropped rather than
+shrunk into grey mush, leaving a clean silhouette.
+
+Windows draws an executable's icon from a resource inside the file, and
+`go build` writes none — so `buildapp` stamps one in after linking, along with
+the version strings the file's Properties dialog shows and the per-monitor DPI
+manifest the webview needs. That is why only the packaged executable has an
+icon; the bare `go build` output does not.
 
 ## Building
 
@@ -77,7 +112,7 @@ go run -tags tools ./buildapp -zip
 On a machine without a C toolchain, `buildapp` refuses these targets with a
 clear message instead of failing deep inside cgo.
 
-### Building by hand
+## Building by hand
 
 The desktop app needs two build tags and, on Windows, the GUI subsystem flag:
 
@@ -283,6 +318,10 @@ The splash covers that window so an empty folder list is never mistaken for a
 lost configuration. It disappears when the core reports itself ready; if that
 takes more than 15 seconds a button appears to dismiss it early.
 
+**The window's title bar icon** comes from the executable's resource, described
+under "The mark". The header's logo is the same shape as an inline SVG, so it
+follows the interface's colours rather than being a fixed image.
+
 **The web GUI is off.** The embedded instance sets `gui.enabled=false`, so
 nothing listens on port 8384 — which also means the app never collides with a
 separately running Syncthing's GUI. The device protocol port is still used;
@@ -299,8 +338,9 @@ before exiting.
 **Only one instance runs per data directory.** Launching again brings the
 existing window to the front.
 
-**Tray icon colours**: green idle, blue syncing, amber paused, red error, grey
-starting or no device connected.
+**Tray icon colours**: the mark in green when idle, blue while syncing, amber
+when paused, red on an error, and grey while starting or with no device
+connected.
 
 ## Testing the core without a GUI
 

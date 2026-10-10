@@ -10,10 +10,10 @@
 package tray
 
 import (
-	"bytes"
 	"image"
 	"image/color"
-	"image/png"
+
+	"github.com/syncthing/syncthing/desktop/brand"
 )
 
 // Status is the coarse state the tray icon communicates.
@@ -51,53 +51,15 @@ var palette = map[Status]color.NRGBA{
 	StatusOffline: {R: 0x8a, G: 0x8a, B: 0x8a, A: 0xff}, // grey
 }
 
-// IconPNG renders a circular status badge. The icon is generated rather than
-// shipped as a file so every platform gets the same art without binary assets.
+// IconPNG renders the status icon: the app's feather, filled in the status
+// colour, so the tray says what the app is doing in the app's own shape.
 func IconPNG(status Status, size int) []byte {
-	if size <= 0 {
-		size = 32
-	}
-	c := palette[status]
-	img := image.NewNRGBA(image.Rect(0, 0, size, size))
-
-	cx := float64(size-1) / 2
-	cy := float64(size-1) / 2
-
-	// A ring plus a filled centre, leaving a small gap so the badge reads as a
-	// status pip rather than a flat dot.
-	outer := cx
-	inner := outer * 0.62
-
-	for y := 0; y < size; y++ {
-		for x := 0; x < size; x++ {
-			dx := float64(x) - cx
-			dy := float64(y) - cy
-			d := sqrt(dx*dx + dy*dy)
-			switch {
-			case d <= inner:
-				img.SetNRGBA(x, y, c)
-			case d <= outer && d >= inner*1.12:
-				img.SetNRGBA(x, y, c)
-			}
-		}
-	}
-
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
-		return nil
-	}
-	return buf.Bytes()
+	return brand.PNG(size, brand.SolidTheme(palette[status]))
 }
 
-// sqrt is a small Newton-Raphson square root, kept local so the icon generator
-// pulls in nothing but image/png.
-func sqrt(v float64) float64 {
-	if v <= 0 {
-		return 0
-	}
-	x := v
-	for i := 0; i < 24; i++ {
-		x = (x + v/x) / 2
-	}
-	return x
+// IconICO renders the status icon as a multi-size Windows icon.
+func IconICO(status Status, sizes []int) []byte {
+	return brand.ICO(sizes, func(s int) image.Image {
+		return brand.Mark(s, brand.SolidTheme(palette[status]))
+	})
 }

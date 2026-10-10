@@ -47,12 +47,7 @@ body {
 
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
-.logo {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: radial-gradient(circle at 50% 50%, var(--accent) 0 42%, transparent 43%),
-              radial-gradient(circle at 50% 50%, var(--accent) 0 68%, transparent 69%);
-  flex: 0 0 auto;
-}
+.logo { width: 30px; height: 30px; flex: 0 0 auto; }
 
 h1 { font-size: 15px; margin: 0; letter-spacing: .2px; }
 .sub { margin: 0; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -184,8 +179,12 @@ input[type=text], input[type=number], select {
 .boot-card .hint { margin-top: 8px; }
 .boot-card .btn { margin-top: 20px; }
 
+/* The boot card is the first thing drawn, and it is where the mark makes its
+   case: the app icon's own artwork, then a spinner under it. */
+.boot-mark { width: 72px; height: 72px; display: block; margin: 0 auto 18px; }
+
 .boot-spinner {
-  width: 34px; height: 34px; margin: 0 auto;
+  width: 26px; height: 26px; margin: 0 auto;
   border: 3px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;

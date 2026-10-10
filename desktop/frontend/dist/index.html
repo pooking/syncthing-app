@@ -12,6 +12,9 @@
      path that shows it also hides it. -->
 <div id="boot" class="boot hidden">
   <div class="boot-card">
+    <!-- The app's own icon and not a generic spinner: the few seconds the core
+         takes to start are the whole first impression. -->
+    <img class="boot-mark" src="mark.svg" alt="" aria-hidden="true" />
     <div class="boot-spinner" aria-hidden="true"></div>
     <h1 data-i18n="boot.title">Starting OspreySyncTool…</h1>
     <p class="hint" id="boot-detail" data-i18n="boot.detail">Loading the configuration and database.</p>
@@ -50,7 +53,9 @@
 <div id="app" class="hidden">
   <header class="topbar">
     <div class="brand">
-      <span class="logo"></span>
+      <!-- The mark, drawn from the same code as the executable's icon
+           (desktop/brand), so the window and the taskbar agree. -->
+      <img class="logo" src="mark.svg" alt="" aria-hidden="true" />
       <div>
         <h1>OspreySyncTool</h1>
         <p class="sub" id="device-line">—</p>

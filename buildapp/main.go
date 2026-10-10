@@ -30,12 +30,20 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/tc-hib/winres"
+	"github.com/tc-hib/winres/version"
+
+	"github.com/syncthing/syncthing/desktop/brand"
 )
 
 const (
 	appName    = "OspreySyncTool"
 	binaryName = "osprey-sync-tool"
 	mainPkg    = "./cmd/osprey-sync-tool"
+	// appDescription is what Windows shows for the executable in the Details
+	// tab and in Task Manager.
+	appDescription = "OspreySyncTool — portable file synchronisation"
 	// desktopTags: "production" is required by Wails for manual `go build`
 	// (without it Wails compiles a stub that only shows an error dialog), and
 	// "noassets" skips embedding the unused upstream web GUI.
@@ -46,7 +54,7 @@ var (
 	goos    = flag.String("goos", runtime.GOOS, "target operating system")
 	goarch  = flag.String("goarch", runtime.GOARCH, "target architecture")
 	outDir  = flag.String("out", "dist", "output directory")
-	version = flag.String("version", "", "version to stamp (default: derived from git)")
+	verFlag = flag.String("version", "", "version to stamp (default: derived from git)")
 	doZip   = flag.Bool("zip", false, "produce a portable zip archive")
 	all     = flag.Bool("all", false, "build windows/amd64, linux/amd64 and darwin/universal archives")
 	skipGui = flag.Bool("cli-only", false, "build only the headless harness (useful for testing)")
@@ -86,7 +94,7 @@ func main() {
 }
 
 func build(goosValue, goarchValue string, zipUp bool) error {
-	ver := *version
+	ver := *verFlag
 	if ver == "" {
 		ver = deriveVersion()
 	}
@@ -128,7 +136,6 @@ func build(goosValue, goarchValue string, zipUp bool) error {
 		tags = "noassets"
 	}
 	args := []string{"build", "-trimpath", "-tags", tags, "-ldflags", ldflags, "-o", binPath, pkg}
-
 	// The Windows desktop build is pure Go: modernc.org/sqlite, the WebView2
 	// bindings and the Win32 tray need no C toolchain, so it cross-compiles
 	// from anywhere. The Linux and macOS desktop builds are a different
@@ -161,6 +168,15 @@ func build(goosValue, goarchValue string, zipUp bool) error {
 		return fmt.Errorf("go build: %w", err)
 	}
 
+	// Windows draws an executable's icon, its Details-tab strings and its DPI
+	// behaviour from resources embedded in the file. `go build` puts none of
+	// them there, so they are written in afterwards.
+	if goosValue == "windows" && !*skipGui {
+		if err := stampWindowsResources(binPath, ver); err != nil {
+			return fmt.Errorf("write Windows resources: %w", err)
+		}
+	}
+
 	if zipUp {
 		archive := filepath.Join(*outDir, fmt.Sprintf("%s-%s-%s.zip", appName, goosValue, goarchValue))
 		if err := writePortableZip(archive, binPath, filepath.Base(binPath)); err != nil {
@@ -169,6 +185,91 @@ func build(goosValue, goarchValue string, zipUp bool) error {
 		log.Printf("wrote %s", archive)
 	}
 	return nil
+}
+
+// stampWindowsResources writes the icon and version information into the built
+// executable.
+//
+// The icon goes in as a resource rather than being passed to Wails, because
+// Wails only reads one from the project layout its own CLI generates — and this
+// app is built with `go build`, so there is no project layout to put it in.
+// A resource is also what Windows actually draws: Explorer, the taskbar and the
+// title bar all read the executable's icon, and without one they show the
+// generic application icon no matter what the window is titled.
+//
+// The version strings are a bonus of doing it this way: they are what the
+// Details tab of the file's Properties shows, and what Task Manager displays.
+func stampWindowsResources(exePath, ver string) error {
+	// The art is drawn in Go (desktop/brand), so the build needs no image file
+	// on disk and there is nothing to keep in step with it.
+	rs := winres.ResourceSet{}
+	ico, err := winres.NewIconFromImages(brand.TileImages(brand.ICOSizes))
+	if err != nil {
+		return err
+	}
+	// ID 1 is what Windows expects an application icon to be under, and what
+	// Wails asks for when it draws the title bar and the taskbar button.
+	if err := rs.SetIcon(winres.ID(1), ico); err != nil {
+		return err
+	}
+
+	vi := version.Info{}
+	vi.SetFileVersion(ver)
+	vi.SetProductVersion(ver)
+	for _, kv := range [][2]string{
+		{version.ProductName, appName},
+		{version.FileDescription, appDescription},
+		{version.CompanyName, appName},
+		{version.InternalName, binaryName},
+		{version.OriginalFilename, filepath.Base(exePath)},
+	} {
+		if err := vi.Set(version.LangDefault, kv[0], kv[1]); err != nil {
+			return err
+		}
+	}
+	rs.SetVersionInfo(vi)
+
+	// Per-monitor DPI awareness is what the webview needs to stay sharp on a
+	// scaled display; the common controls v6 dependency is what gives the
+	// native dialogs their modern look.
+	rs.SetManifest(winres.AppManifest{
+		DPIAwareness:        winres.DPIPerMonitorV2,
+		UseCommonControlsV6: true,
+	})
+
+	// winres can also produce a linkable object, but this executable has
+	// already been linked. WriteToEXE restates its resource section instead,
+	// which is the same content and skips a second link entirely.
+	return replaceResources(exePath, rs)
+}
+
+// replaceResources rewrites the executable's resource section in place. The new
+// file is written beside it and renamed over the top, so a failure part way
+// through leaves the built executable rather than a truncated one.
+func replaceResources(exePath string, rs winres.ResourceSet) error {
+	dir := filepath.Dir(exePath)
+	tmp, err := os.CreateTemp(dir, ".osprey-res-*")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	defer os.Remove(tmpPath)
+
+	src, err := os.Open(exePath)
+	if err != nil {
+		tmp.Close()
+		return err
+	}
+	err = rs.WriteToEXE(tmp, src)
+	src.Close()
+	if err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, exePath)
 }
 
 // writePortableZip produces the "green" package: the executable plus an empty

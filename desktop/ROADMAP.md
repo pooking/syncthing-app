@@ -81,6 +81,7 @@ E:\Dev\OspreySyncTool\dist\
 
 2. **macOS 打包**
    - 生成 `.app` bundle：`Contents/{MacOS/, Info.plist, Resources/AppIcon.icns}`
+   - `.icns` 由 `desktop/brand` 出：`go run -tags tools ./desktop/brand/preview -write` 已能写 PNG 与 SVG，加一个 `iconutil` 步骤即可（macOS 上 `sips` 出各尺寸 + `iconutil -c icns`）
    - `Info.plist` 关键项：`CFBundleIdentifier`、`CFBundleIconFile`、`LSMinimumSystemVersion`
    - **不要**设 `LSUIElement=true`（需要主窗口）
    - codesign：先 ad-hoc（`-s -`），脚本预留 Developer ID + notarize 参数
@@ -154,6 +155,7 @@ func SetLanguage(lang string) error
 
 | 目的 | 文件 |
 |---|---|
+| 图标（羽毛，代码绘制） | `desktop/brand/brand.go`；预览 `go run -tags tools ./desktop/brand/preview` |
 | 嵌入组装序列（对照 `cmd/syncthing/main.go:406-568`） | `appcore/core.go` |
 | 事件桥 / 状态聚合 | `appcore/state.go` |
 | 翻译目录（Go 侧） | `appcore/i18n.go` |
@@ -170,8 +172,12 @@ func SetLanguage(lang string) error
 # 构建便携包
 go run -tags tools ./buildapp -zip
 
+# 图标：看效果 / 重新生成提交进仓库的那几张
+go run -tags tools ./desktop/brand/preview
+go run -tags tools ./desktop/brand/preview -write
+
 # 测试与检查
-go test ./appcore/...
+go test ./appcore/... ./desktop/...
 go vet -tags "noassets" ./appcore/... ./desktop/...
 gofmt -l appcore desktop buildapp cmd/osprey-sync-tool cmd/syncthing-cli
 
