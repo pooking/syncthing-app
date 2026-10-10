@@ -48,6 +48,12 @@ const (
 	// (without it Wails compiles a stub that only shows an error dialog), and
 	// "noassets" skips embedding the unused upstream web GUI.
 	desktopTags = "noassets,production"
+
+	// wailsAppIconID is the resource ID Wails looks the window icon up by
+	// (internal/frontend/desktop/windows/winc.AppIconID). It is not exported,
+	// so it is repeated here, and TestWailsIconIDMatches guards against it
+	// moving.
+	wailsAppIconID = 3
 )
 
 var (
@@ -207,9 +213,18 @@ func stampWindowsResources(exePath, ver string) error {
 	if err != nil {
 		return err
 	}
-	// ID 1 is what Windows expects an application icon to be under, and what
-	// Wails asks for when it draws the title bar and the taskbar button.
+	// It goes in under both names Windows looks an application icon up by.
+	//
+	// ID 1 is the convention every resource compiler follows, and it is what
+	// Explorer, the shell and LoadIcon reach for — this is the icon on the file
+	// itself. ID 3 is what Wails asks for when it sets the window's icon, and
+	// its lookup failure is silent: register only ID 1 and the executable shows
+	// its own icon in Explorer while the window and the taskbar button show the
+	// generic one.
 	if err := rs.SetIcon(winres.ID(1), ico); err != nil {
+		return err
+	}
+	if err := rs.SetIcon(winres.ID(wailsAppIconID), ico); err != nil {
 		return err
 	}
 
