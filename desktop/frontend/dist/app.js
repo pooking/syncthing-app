@@ -233,8 +233,19 @@ function showWizard(setup) {
 
 function wireWizard() {
   $('wiz-pick').addEventListener('click', async () => {
-    const dir = await api().PickDirectory(t('wizard.pick'));
+    // Open where the typed path points, if it is somewhere that exists: typing
+    // a parent and then browsing into it is a common way to reach a subfolder.
+    const dir = await api().PickDirectoryNear(t('wizard.pick'), $('wiz-dir').value.trim());
     if (dir) $('wiz-dir').value = dir;
+  });
+
+  // The path is typed rather than only picked, so make sure what the user sees
+  // is what will be used. The Go side resolves and creates it; this only takes
+  // off trailing slashes and whitespace, which are not a decision anyone makes
+  // on purpose.
+  $('wiz-dir').addEventListener('blur', () => {
+    const el = $('wiz-dir');
+    el.value = el.value.trim().replace(/[\\/]+$/, '');
   });
 
   $('wiz-done').addEventListener('click', async () => {

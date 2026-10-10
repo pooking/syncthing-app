@@ -32,9 +32,10 @@
     <label class="field">
       <span data-i18n="wizard.dirLabel">Where should shared folders live?</span>
       <div class="row">
-        <input type="text" id="wiz-dir" readonly />
+        <input type="text" id="wiz-dir" spellcheck="false" data-i18n-ph="wizard.dirPlaceholder" placeholder="C:\Users\you\Sync" />
         <button class="btn" id="wiz-pick" data-i18n="wizard.change">Change…</button>
       </div>
+      <span class="hint" data-i18n="wizard.dirHint">Type a path, or use Change… to pick one. It is created if it does not exist.</span>
     </label>
 
     <p class="hint" id="wiz-storage">—</p>

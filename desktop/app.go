@@ -361,15 +361,27 @@ func (a *App) DeviceIDQRCode() string { return a.core.DeviceIDQRCode() }
 // PickDirectory opens a native directory chooser and returns the path ("" if
 // the user cancelled).
 func (a *App) PickDirectory(title string) (string, error) {
+	return a.PickDirectoryNear(title, "")
+}
+
+// PickDirectoryNear is PickDirectory, opening at near when that is a directory
+// that exists. Typing a path and then browsing from it is a common way to reach
+// a subdirectory, and the chooser remembering its last location instead would
+// ignore what the user just wrote.
+func (a *App) PickDirectoryNear(title, near string) (string, error) {
 	a.ctxMu.Lock()
 	ctx := a.ctx
 	a.ctxMu.Unlock()
 	if title == "" {
 		title = a.core.T(appcore.CodeDialogPickFolder)
 	}
+	start := existingDir(near)
+	if start == "" {
+		start = existingDir(a.core.DefaultSyncDir())
+	}
 	return wailsruntime.OpenDirectoryDialog(ctx, wailsruntime.OpenDialogOptions{
 		Title:            title,
-		DefaultDirectory: existingDir(a.core.DefaultSyncDir()),
+		DefaultDirectory: start,
 	})
 }
 
