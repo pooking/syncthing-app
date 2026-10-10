@@ -419,6 +419,12 @@ function renderStatus() {
   const peers = state.devices.filter((d) => d.id !== myID).length;
   if (peers) bits.push(t('status.devicesOnline', { online, total: peers }));
   $('status-detail').textContent = bits.join(' · ');
+
+  // What this device calls itself, read back from the running config rather
+  // than from the settings field: it is what goes out in the handshake, so a
+  // disagreement with what another device displays is about that device's
+  // stored copy, not about this side not having saved it.
+  $('my-name').textContent = state.myName || t('devices.unnamed');
 }
 
 function renderFolders() {

@@ -92,6 +92,9 @@
       <div class="card">
         <h2 data-i18n="devices.thisDevice">This device</h2>
         <div class="row">
+          <span class="name" id="my-name">—</span>
+        </div>
+        <div class="row">
           <code class="id" id="my-id">—</code>
           <button class="btn" id="copy-id" data-i18n="devices.copy">Copy</button>
           <button class="btn" id="show-qr" data-i18n="devices.qr">QR code</button>
@@ -133,6 +136,12 @@
           <span data-i18n="settings.deviceName">Device name</span>
           <input type="text" id="set-name" />
           <span class="hint" data-i18n="settings.deviceNameHint">Announced to other devices when they connect.</span>
+          <!-- Reads back what this device announces, next to the field that
+               sets it. A device that already knows this one keeps its own copy
+               of the name, so the two can differ legitimately; this line is
+               what tells "the app did not save it" apart from "that peer has an
+               older copy". -->
+          <span class="hint" id="device-name-live">—</span>
         </label>
         <label class="field checkbox">
           <input type="checkbox" id="set-autostart" />

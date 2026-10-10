@@ -51,6 +51,11 @@ func main() {
 
 	fmt.Printf("Device ID: %s\n", app.DeviceID())
 	fmt.Printf("Data dir:  %s\n", app.DataDir())
+	// The name is what this device announces to peers, and it is the only thing
+	// a peer can learn about it. Printing it here is what makes "the other side
+	// shows a different name" a question with an answer: either this line is
+	// wrong, or the peer is showing a copy of the name it stored earlier.
+	fmt.Printf("Name:      %q\n", app.Settings().DeviceName)
 	if s := app.Settings(); s.HubDeviceID != "" {
 		fmt.Printf("Hub:       %s (%s) at %s, new folders shared: %v\n",
 			s.HubName, s.HubDeviceID, s.HubAddress, s.HubShareNewFolders)
