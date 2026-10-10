@@ -4,28 +4,31 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at https://mozilla.org/MPL/2.0/.
 
-// Package brand draws OspreySyncTool's mark: a feather, for the osprey the app
-// is named after.
+// Package brand draws OspreySyncTool's mark: an owl, in flat colour.
 //
 // The art lives in code rather than in checked-in bitmaps so every place it
-// appears — the embedded Windows icon resource, the tray, the window's
-// favicon, the README — is drawn from one definition and cannot drift out of
-// step. The geometry is authored in a 512x512 space and scaled on demand, so
-// the same numbers give a legible 16-pixel tray icon and a crisp 512-pixel app
-// icon.
+// appears — the embedded Windows icon resource, the tray, the window's header,
+// the README — is drawn from one definition and cannot drift out of step. The
+// geometry is authored in a 512x512 space and scaled on demand, so the same
+// numbers give a legible 16-pixel tray icon and a crisp 512-pixel app icon.
 //
 // Two forms are drawn from that one geometry:
 //
-//   - Mark, the bare feather on a transparent square. This is the tray icon and
-//     the inline logo in the interface, where the surrounding page supplies the
+//   - Mark, the owl on a transparent square: ink, for the tray and for the
+//     logo in the interface, where the surrounding page supplies the
 //     background.
-//   - Tile, the same feather in white on a rounded gradient square, as an
-//     application icon has to be: at 16 pixels in a taskbar a thin transparent
-//     shape has almost no presence, while a solid tile is recognisable at a
-//     glance.
+//   - Tile, the same owl in white on a rounded blue square, as an application
+//     icon has to be: at 16 pixels in a taskbar a thin shape on nothing has
+//     almost no presence, while a solid tile is recognisable at a glance.
 //
-// Detailed features — the quill down the middle, the gaps between the barbs —
-// are dropped below a size threshold rather than shrunk into grey mush.
+// Everything is a filled shape, and the face is cut out of the body rather than
+// drawn on top of it: an eye is a hole, so whatever is behind the owl shows
+// through. That is what makes one drawing work as white-on-blue in the taskbar,
+// as ink on a light tray, and as ink on a dark one, with no second colour to
+// pick.
+//
+// The belly marks and the branch are dropped below a size threshold rather than
+// shrunk into grey mush.
 package brand
 
 import (
@@ -46,141 +49,81 @@ import (
 // in these units; the drawing functions scale by size/canvas.
 const canvas = 512.0
 
-// The feather's skeleton, in canvas units. cx is the axis the whole mark is
-// built on; the numbers were settled by rendering and looking, which is the
-// only way any of this gets decided.
+// The owl's skeleton, in canvas units. The numbers were settled by rendering
+// and looking, which is the only way this kind of shape gets decided.
 const (
-	cx     = canvas / 2 // the feather stands on the vertical centre line
-	tipY   = 54.0       // the point of the feather
-	vaneY  = 396.0      // where the vane's edges converge again, onto the quill
-	quillY = 456.0      // the bottom end of the bare quill
-	maxHW  = 163.0      // the vane's half-width at its widest
+	cx      = canvas / 2 // the axis the owl stands on
+	headTop = 100.0      // the apex of the head, between the ear tufts
+	bodyBot = 412.0      // the bottom of the body, where the feet hang
+	bodyHW  = 146.0      // the body's half-width at its widest
+	eyeY    = 232.0      // the centres of the eyes
+	eyeDX   = 62.0       // how far each eye sits off the axis
+	eyeR    = 54.0       // the eyes' radius
+	beakY   = 296.0      // the top of the beak
 )
 
-// vaneEdgeEnd is where the outline stops following the profile. The profile
-// reaches zero at 1.0, but sampling right up to it would leave the last segment
-// almost parallel to the axis; stopping a shade short and closing with a small
-// rounded cap gives the vane a tip that converges cleanly onto the quill.
-const vaneEdgeEnd = 0.985
-
-// detailMinSize is the smallest icon that gets the quill and the barb gaps.
+// detailMinSize is the smallest icon that gets the branch and the belly marks.
 // Below it those features are narrower than a pixel and only make the shape
 // look noisy.
 const detailMinSize = 32
 
-// profileTable is the vane's half-width at each point along its length, as a
-// fraction of maxHW: 0 at the point, near 1 at the widest. This is what makes
-// the silhouette read as a feather — a long slow taper from a sharp point
-// through the widest part at a bit under half way, then narrowing steadily back
-// onto the quill. A profile that is symmetric about the middle, or that stays
-// wide at the base, reads as a leaf.
-//
-// The samples are not evenly spaced, which is why vaneHalfWidth interpolates
-// with finite-difference tangents rather than a uniform Catmull-Rom.
-var profileTable = [][2]float64{
-	{0.00, 0.000},
-	{0.02, 0.042},
-	{0.06, 0.128},
-	{0.11, 0.245},
-	{0.17, 0.375},
-	{0.24, 0.515},
-	{0.31, 0.630},
-	{0.38, 0.715},
-	{0.45, 0.766},
-	{0.52, 0.785},
-	{0.59, 0.778},
-	{0.66, 0.748},
-	{0.73, 0.694},
-	{0.79, 0.622},
-	{0.85, 0.522},
-	{0.90, 0.410},
-	{0.94, 0.288},
-	{0.97, 0.166},
-	{1.00, 0.000},
-}
-
-// Theme is the pair of colours the mark is drawn with. The vane is filled with
-// a vertical ramp and the quill with a flat colour; the flat colour is what
-// keeps the quill readable on top of the vane without outlining it.
+// Theme is the colour the owl is drawn in. There is only one: the face is cut
+// out of the body, so the eyes take the colour of whatever the owl sits on.
 type Theme struct {
-	Vane  []color.NRGBA // sampled from the point (first) to the base (last)
-	Quill color.NRGBA
+	Body []color.NRGBA // sampled from the head (first) to the feet (last)
 }
 
-// DefaultTheme is the mark as it appears in the interface: the same blue as the
-// UI's accent, so the icon and the window belong to each other.
+// DefaultTheme is the owl as it appears in the interface: the accent blue.
 func DefaultTheme() Theme {
 	return Theme{
-		Vane: []color.NRGBA{
-			{R: 0x7d, G: 0xbb, B: 0xf4, A: 0xff}, // lighter than the accent, so the point does not read as flat
+		Body: []color.NRGBA{
+			{R: 0x4a, G: 0x9a, B: 0xe8, A: 0xff}, // lighter than the accent, so the head does not read as flat
 			{R: 0x2b, G: 0x7c, B: 0xd6, A: 0xff}, // --accent
-			{R: 0x1a, G: 0x5c, B: 0xa4, A: 0xff}, // darker, to ground the base
+			{R: 0x1d, G: 0x63, B: 0xb4, A: 0xff}, // darker, to ground the feet
 		},
-		Quill: color.NRGBA{R: 0x16, G: 0x4b, B: 0x88, A: 0xff},
 	}
 }
 
-// TileTheme is the app icon: a white feather on the accent gradient.
-func TileTheme() (fg Theme, bg color.NRGBA) {
-	return Theme{
-		Vane:  []color.NRGBA{{R: 0xff, G: 0xff, B: 0xff, A: 0xff}},
-		Quill: color.NRGBA{R: 0xd6, G: 0xe8, B: 0xfb, A: 0xff},
-	}, color.NRGBA{R: 0x2b, G: 0x7c, B: 0xd6, A: 0xff}
+// TileTheme is the app icon: the owl in white on the accent gradient.
+func TileTheme() Theme {
+	return Theme{Body: []color.NRGBA{{R: 0xff, G: 0xff, B: 0xff, A: 0xff}}}
 }
 
-// SolidTheme builds a single-hue theme, used by the tray so one shape carries
-// the status colour. The vane ramps from a lightened to a darkened version of c
-// and the quill sits well below it, which is the contrast DefaultTheme gets
-// from three separate colours.
+// SolidTheme builds a single-colour owl, used by the tray so one shape carries
+// the status colour.
 func SolidTheme(c color.NRGBA) Theme {
-	return Theme{
-		Vane: []color.NRGBA{
-			blend(c, color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, 0.26),
-			c,
-			blend(c, color.NRGBA{A: 0xff}, 0.20),
-		},
-		Quill: blend(c, color.NRGBA{A: 0xff}, 0.50),
-	}
-}
-
-// blend mixes a towards b by t (0 keeps a, 1 returns b), alpha aside.
-func blend(a, b color.NRGBA, t float64) color.NRGBA {
-	mix := func(x, y uint8) uint8 {
-		return uint8(math.Round(float64(x)*(1-t) + float64(y)*t))
-	}
-	return color.NRGBA{R: mix(a.R, b.R), G: mix(a.G, b.G), B: mix(a.B, b.B), A: 0xff}
+	return Theme{Body: []color.NRGBA{c}}
 }
 
 // ---- Public images --------------------------------------------------------
 
-// Mark draws the bare feather at the given size on a transparent square.
+// Mark draws the owl at the given size on a transparent square.
 func Mark(size int, th Theme) *image.NRGBA {
 	if size < 1 {
 		size = 1
 	}
 	img := image.NewNRGBA(image.Rect(0, 0, size, size))
-	drawFeather(img, size, th, float64(size)/canvas, 0, 0)
+	drawOwl(img, size, th, float64(size)/canvas, 0, 0)
 	return img
 }
 
-// inset is how much of the tile the feather does not use, as a fraction of the
-// tile's side on each edge. A fifth of the width is what leaves the rounded
-// corners readable while keeping the feather as large as it can be.
-const inset = 0.13
+// inset is how much of the tile the owl does not use, as a fraction of the
+// tile's side on each edge. Enough to leave the rounded corners readable, and
+// no more: the owl is the thing being recognised, and every pixel of margin is
+// a pixel it does not get.
+const inset = 0.12
 
-// Tile draws the app icon: the feather in white, centred on a rounded square
-// filled with a diagonal gradient from light to dark.
+// Tile draws the app icon: the owl in white, centred on a rounded square filled
+// with a diagonal gradient from light to dark.
 //
-// The feather is drawn straight into the tile's own rasterizer at the tile's
-// own resolution rather than rendered small and pasted in, so the two shapes
-// share one antialiasing pass. Pasted, the feather's edge picks up a second
-// round of coverage on top of the tile's and the seam between them is visible
-// at small sizes as a bright fringe.
+// The owl is drawn into the tile's own rasterizer rather than rendered small
+// and pasted in, so the two shapes share one antialiasing pass. Pasted, the
+// owl's edge picks up a second round of coverage on top of the tile's and the
+// seam between them is visible at small sizes as a bright fringe.
 func Tile(size int) *image.NRGBA {
 	if size < 1 {
 		size = 1
 	}
-	fg, _ := TileTheme()
 	img := image.NewNRGBA(image.Rect(0, 0, size, size))
 
 	r := vector.NewRasterizer(size, size)
@@ -191,18 +134,16 @@ func Tile(size int) *image.NRGBA {
 		linear: true,
 	}, image.Point{})
 
-	// The feather is laid over a feathered copy of itself rather than drawn
-	// directly into the tile: the white has to arrive with its own alpha, so
-	// that the tile's gradient stays visible wherever the feather is less than
-	// fully covered.
+	// The owl is composited over the tile as its own layer, so the face it has
+	// cut out of itself shows the tile's gradient rather than the owl's colour.
 	inner := int(math.Round(float64(size) * (1 - 2*inset)))
 	if inner < 1 {
 		inner = 1
 	}
 	off := (size - inner) / 2
-	feather := image.NewNRGBA(image.Rect(0, 0, inner, inner))
-	drawFeather(feather, inner, fg, float64(inner)/canvas, 0, 0)
-	draw.Draw(img, image.Rect(off, off, off+inner, off+inner), feather, image.Point{}, draw.Over)
+	owl := image.NewNRGBA(image.Rect(0, 0, inner, inner))
+	drawOwl(owl, inner, TileTheme(), float64(inner)/canvas, 0, 0)
+	draw.Draw(img, image.Rect(off, off, off+inner, off+inner), owl, image.Point{}, draw.Over)
 	return img
 }
 
@@ -276,72 +217,74 @@ func ICO(sizes []int, render func(int) image.Image) []byte {
 	return buf.Bytes()
 }
 
-// SVG renders the bare mark as a standalone SVG document, for the interface and
-// for looking at the art in a browser.
+// SVG renders the owl as a standalone SVG document, for the interface and for
+// looking at the art in a browser.
 func SVG(size int, th Theme) string {
 	var b bytes.Buffer
 	b.WriteString(`<svg xmlns="http://www.w3.org/2000/svg" width="` + strconv.Itoa(size) +
 		`" height="` + strconv.Itoa(size) + `" viewBox="0 0 512 512">`)
 
-	// The vane's gradient runs over the feather, not over the whole square, so
-	// the point and the base land on the sampled colours.
-	b.WriteString(`<defs><linearGradient id="v" gradientUnits="userSpaceOnUse" x1="0" y1="` +
-		trim(tipY) + `" x2="0" y2="` + trim(vaneY) + `">`)
-	for i, c := range th.Vane {
+	// The body's gradient runs over the owl, not over the whole square, so the
+	// head and the feet land on the sampled colours.
+	b.WriteString(`<defs><linearGradient id="b" gradientUnits="userSpaceOnUse" x1="0" y1="` +
+		trim(headTop) + `" x2="0" y2="` + trim(bodyBot) + `">`)
+	for i, c := range th.Body {
 		offset := 0.0
-		if len(th.Vane) > 1 {
-			offset = float64(i) / float64(len(th.Vane)-1)
+		if len(th.Body) > 1 {
+			offset = float64(i) / float64(len(th.Body)-1)
 		}
 		b.WriteString(`<stop offset="` + trim(offset*100) + `%" stop-color="` + hex(c) + `"/>`)
 	}
 	b.WriteString(`</linearGradient>`)
-	b.WriteString(`<mask id="notches"><rect x="-8" y="-8" width="528" height="528" fill="#fff"/>` +
-		`<path fill="#000" d="` + notchPath().d() + `"/></mask>`)
-	b.WriteString(`</defs>`)
 
-	b.WriteString(`<g mask="url(#notches)"><path fill="url(#v)" d="` + vanePath().d() + `"/></g>`)
-	b.WriteString(`<path fill="` + hex(th.Quill) + `" d="` + quillPath().d() + `"/>`)
-	b.WriteString(`</svg>`)
+	// The face is a mask, not a fill: an SVG has no "cut this out of that", so
+	// the same subpaths that are punched out of the bitmap are painted black
+	// into a white mask here.
+	b.WriteString(`<mask id="face"><rect x="-16" y="-16" width="544" height="544" fill="#fff"/>`)
+	for _, p := range facePaths(true) {
+		b.WriteString(`<path fill="#000" d="` + p.d() + `"/>`)
+	}
+	b.WriteString(`</mask></defs>`)
+
+	b.WriteString(`<g mask="url(#face)">`)
+	b.WriteString(`<path fill="url(#b)" d="` + owlPath().d() + `"/>`)
+	b.WriteString(`</g></svg>`)
 	return b.String()
 }
 
 // ---- Drawing --------------------------------------------------------------
 
-// drawFeather renders the feather into img. The scale/offset arguments place it
-// so Tile can draw it inside a smaller square without a second rasterizer pass.
-func drawFeather(img *image.NRGBA, size int, th Theme, scale, offX, offY float64) {
-	detailed := size >= detailMinSize
-
+// drawOwl renders the owl into img, scaled out of the canvas space.
+func drawOwl(img *image.NRGBA, size int, th Theme, scale, offX, offY float64) {
+	body := image.NewNRGBA(img.Bounds())
 	r := vector.NewRasterizer(size, size)
-	vanePath().rasterizeAt(r, scale, offX, offY)
-	r.Draw(img, img.Bounds(), &ramp{stops: th.Vane, size: size}, image.Point{})
-
-	if !detailed {
-		return
-	}
-
-	r.Reset(size, size)
-	quillPath().rasterizeAt(r, scale, offX, offY)
-	r.Draw(img, img.Bounds(), image.NewUniform(th.Quill), image.Point{})
-
-	// The barb gaps are rasterised into an alpha mask and multiplied into the
-	// mark, rather than folded into the vane's outline: the gaps overshoot the
-	// edge, so they stay the shape they were designed as instead of taking
-	// whatever angle the outline happens to have there.
+	owlPath().rasterizeAt(r, scale, offX, offY)
+	r.Draw(body, body.Bounds(), &ramp{stops: th.Body, size: size}, image.Point{})
+	// The face is rasterised into an alpha mask and multiplied into the owl
+	// rather than folded into its outline: an eye is a hole, so the alpha has
+	// to come off, and doing it here means the same geometry serves the tile,
+	// the tray and the SVG.
+	//
+	// The eyes are never dropped, at any size. They are the whole reason the
+	// shape reads as an owl; without them it is a blob with two ears.
 	mask := image.NewAlpha(img.Bounds())
 	r.Reset(size, size)
 	r.DrawOp = draw.Src
-	notchPath().rasterizeAt(r, scale, offX, offY)
+	for _, p := range facePaths(size >= detailMinSize) {
+		p.rasterizeAt(r, scale, offX, offY)
+	}
 	r.Draw(mask, mask.Bounds(), image.NewUniform(color.Alpha{A: 0xff}), image.Point{})
 
 	for y := 0; y < size; y++ {
 		for x := 0; x < size; x++ {
 			if a := mask.AlphaAt(x, y).A; a > 0 {
-				i := img.PixOffset(x, y)
-				img.Pix[i+3] = uint8(int(img.Pix[i+3]) * (255 - int(a)) / 255)
+				i := body.PixOffset(x, y)
+				body.Pix[i+3] = uint8(int(body.Pix[i+3]) * (255 - int(a)) / 255)
 			}
 		}
 	}
+
+	draw.Draw(img, img.Bounds(), body, image.Point{}, draw.Over)
 }
 
 // ---- Geometry -------------------------------------------------------------
@@ -412,169 +355,219 @@ func (p path) d() string {
 	return b.String()
 }
 
-// vaneHalfWidth interpolates the profile table with cubic Hermite segments,
-// using finite-difference tangents so the uneven sample spacing does not show
-// up as corners.
-func vaneHalfWidth(u float64) float64 {
-	if u <= 0 || u >= 1 {
-		return 0
-	}
-	i := 0
-	for i < len(profileTable)-2 && profileTable[i+1][0] < u {
-		i++
-	}
-	u0, f0 := profileTable[i][0], profileTable[i][1]
-	u1, f1 := profileTable[i+1][0], profileTable[i+1][1]
+// kappa is the control-point ratio that turns four cubics into a circle.
+const kappa = 0.5522847498
 
-	slope := func(k int) float64 {
-		if k == 0 {
-			return (profileTable[1][1] - profileTable[0][1]) / (profileTable[1][0] - profileTable[0][0])
-		}
-		if k == len(profileTable)-1 {
-			n := len(profileTable)
-			return (profileTable[n-1][1] - profileTable[n-2][1]) / (profileTable[n-1][0] - profileTable[n-2][0])
-		}
-		return (profileTable[k+1][1] - profileTable[k-1][1]) / (profileTable[k+1][0] - profileTable[k-1][0])
-	}
-	m0, m1 := slope(i), slope(i+1)
-
-	h := u1 - u0
-	t := (u - u0) / h
-	t2, t3 := t*t, t*t*t
-	return (2*t3-3*t2+1)*f0 + (t3-2*t2+t)*h*m0 + (-2*t3+3*t2)*f1 + (t3-t2)*h*m1
-}
-
-// vaneAt maps a profile position to a point on the feather's axis: its y, and
-// the vane's half-width there.
-func vaneAt(u float64) (y, halfWidth float64) {
-	return tipY + u*(vaneY-tipY), maxHW * vaneHalfWidth(u)
-}
-
-// vaneEdgeSamples returns the right-hand edge of the vane, from beside the point
-// down to where the outline converges on the quill.
-func vaneEdgeSamples() []vertex {
-	const samples = 150
-	edge := make([]vertex, 0, samples)
-	for i := 1; i <= samples; i++ {
-		y, hw := vaneAt(vaneEdgeEnd * float64(i) / samples)
-		edge = append(edge, vertex{cx + hw, y})
-	}
-	return edge
-}
-
-// vanePath is the closed outline of the vane: down the right side from the
-// point, across a narrow rounded base, and back up the left side.
-func vanePath() path {
-	edge := vaneEdgeSamples()
-	last := edge[len(edge)-1]
-	baseHW := last.x - cx
-
-	var p path
-	p.moveTo(vertex{cx, tipY})
-	for _, v := range edge {
-		p.lineTo(v)
-	}
+// circle appends a closed circle. Some helpers below take it reversed, to punch
+// it out of a shape rather than add to it.
+func (p *path) circle(c vertex, r float64) {
+	p.moveTo(vertex{c.x, c.y - r})
 	p.cubeTo(
-		vertex{cx + baseHW*0.62, last.y + (vaneY - last.y) + 14},
-		vertex{cx + baseHW*0.26, vaneY + 16},
-		vertex{cx, vaneY + 16},
+		vertex{c.x + r*kappa, c.y - r},
+		vertex{c.x + r, c.y - r*kappa},
+		vertex{c.x + r, c.y},
 	)
 	p.cubeTo(
-		vertex{cx - baseHW*0.26, vaneY + 16},
-		vertex{cx - baseHW*0.62, last.y + (vaneY - last.y) + 14},
-		vertex{cx - baseHW, last.y},
+		vertex{c.x + r, c.y + r*kappa},
+		vertex{c.x + r*kappa, c.y + r},
+		vertex{c.x, c.y + r},
 	)
-	for i := len(edge) - 2; i >= 0; i-- {
-		p.lineTo(vertex{2*cx - edge[i].x, edge[i].y})
-	}
+	p.cubeTo(
+		vertex{c.x - r*kappa, c.y + r},
+		vertex{c.x - r, c.y + r*kappa},
+		vertex{c.x - r, c.y},
+	)
+	p.cubeTo(
+		vertex{c.x - r, c.y - r*kappa},
+		vertex{c.x - r*kappa, c.y - r},
+		vertex{c.x, c.y - r},
+	)
 	p.close()
-	return p
 }
 
-// quillPath is the bare stalk: the rachis running the length of the feather,
-// drawn on top of the vane, and the quill sticking out below it.
-func quillPath() path {
+// circleReversed appends a circle wound the other way round. Inside a shape
+// that is already wound clockwise the rasteriser's non-zero rule cancels the
+// two, so the circle becomes a hole rather than a fill — which is how a pupil
+// is drawn back into an eye that is itself a hole.
+func (p *path) circleReversed(c vertex, r float64) {
+	p.moveTo(vertex{c.x, c.y - r})
+	p.cubeTo(
+		vertex{c.x - r*kappa, c.y - r},
+		vertex{c.x - r, c.y - r*kappa},
+		vertex{c.x - r, c.y},
+	)
+	p.cubeTo(
+		vertex{c.x - r, c.y + r*kappa},
+		vertex{c.x - r*kappa, c.y + r},
+		vertex{c.x, c.y + r},
+	)
+	p.cubeTo(
+		vertex{c.x + r*kappa, c.y + r},
+		vertex{c.x + r, c.y + r*kappa},
+		vertex{c.x + r, c.y},
+	)
+	p.cubeTo(
+		vertex{c.x + r, c.y - r*kappa},
+		vertex{c.x + r*kappa, c.y - r},
+		vertex{c.x, c.y - r},
+	)
+	p.close()
+}
+
+// owlPath is the owl's silhouette: the ear tufts, the head, the body and the
+// two feet, as one closed shape. One outline rather than several overlapping
+// ones, because overlapping fills show their seams wherever antialiasing meets.
+func owlPath() path {
 	const (
-		r     = 9.0
-		top   = tipY + 22
-		kappa = 0.5522847498 // control-point ratio for a quarter-circle cubic
+		shoulderY = 172.0 // where the head's arc gives way to the body's
+		shoulderW = 116.0 // the body's half-width at the shoulders
+		waistY    = 330.0 // where the body is at its widest
+		soleY     = 412.0 // the body's flat underside, which the feet hang from
+		soleX     = 92.0  // how far the underside runs before the feet
+		toeX      = 70.0  // the feet, outer edge
+		toeInX    = 30.0  // the feet, inner edge
+		toeY      = 440.0 // the tips of the feet
+		tuftX     = 126.0 // how far the ear tufts reach
+		tuftY     = 70.0  // the tips of the ear tufts
 	)
 
 	var p path
-	p.moveTo(vertex{cx - r, top})
-	p.lineTo(vertex{cx - r, quillY - r})
-	p.cubeTo( // round cap at the bottom
-		vertex{cx - r, quillY - r + r*kappa},
-		vertex{cx - r*kappa, quillY},
-		vertex{cx, quillY},
+	p.moveTo(vertex{cx - 92, headTop + 34})
+
+	// Left ear tuft: out and up, then back in to the apex of the head.
+	p.lineTo(vertex{cx - tuftX, tuftY})
+	p.lineTo(vertex{cx - 34, headTop + 6})
+
+	// The apex, and the right tuft.
+	p.lineTo(vertex{cx, headTop})
+	p.lineTo(vertex{cx + 34, headTop + 6})
+	p.lineTo(vertex{cx + tuftX, tuftY})
+	p.lineTo(vertex{cx + 92, headTop + 34})
+
+	// Right side: over the cranium into the shoulder, then down the body.
+	p.cubeTo(
+		vertex{cx + 122, headTop + 40},
+		vertex{cx + shoulderW, shoulderY - 40},
+		vertex{cx + shoulderW, shoulderY},
 	)
 	p.cubeTo(
-		vertex{cx + r*kappa, quillY},
-		vertex{cx + r, quillY - r + r*kappa},
-		vertex{cx + r, quillY - r},
-	)
-	p.lineTo(vertex{cx + r, top})
-	p.cubeTo( // round cap at the top, hidden inside the vane
-		vertex{cx + r, top - r + r*kappa},
-		vertex{cx + r*kappa, top - r},
-		vertex{cx, top - r},
+		vertex{cx + shoulderW + 8, 254},
+		vertex{cx + bodyHW, 288},
+		vertex{cx + bodyHW, waistY},
 	)
 	p.cubeTo(
-		vertex{cx - r*kappa, top - r},
-		vertex{cx - r, top - r + r*kappa},
-		vertex{cx - r, top},
+		vertex{cx + bodyHW, 366},
+		vertex{cx + 138, soleY - 4},
+		vertex{cx + soleX, soleY},
+	)
+
+	// The right foot, hanging below the flat underside.
+	p.lineTo(vertex{cx + toeX, soleY + 4})
+	p.lineTo(vertex{cx + toeX, toeY - 4})
+	p.cubeTo(
+		vertex{cx + toeX, toeY + 2},
+		vertex{cx + toeX - 8, toeY + 6},
+		vertex{cx + toeX - 16, toeY + 6},
+	)
+	p.lineTo(vertex{cx + toeInX + 12, toeY + 6})
+	p.cubeTo(
+		vertex{cx + toeInX + 2, toeY + 4},
+		vertex{cx + toeInX, toeY - 4},
+		vertex{cx + toeInX, soleY + 4},
+	)
+
+	// The inner edge of the left foot, and the left foot.
+	p.lineTo(vertex{cx - toeInX, soleY + 4})
+	p.lineTo(vertex{cx - toeInX, toeY - 4})
+	p.cubeTo(
+		vertex{cx - toeInX, toeY + 2},
+		vertex{cx - toeInX - 8, toeY + 6},
+		vertex{cx - toeInX - 12, toeY + 6},
+	)
+	p.lineTo(vertex{cx - toeX + 16, toeY + 6})
+	p.cubeTo(
+		vertex{cx - toeX + 8, toeY + 2},
+		vertex{cx - toeX, toeY - 4},
+		vertex{cx - toeX, soleY + 4},
+	)
+	p.lineTo(vertex{cx - soleX, soleY})
+
+	// Up the left side and back over the head to where the path started.
+	p.cubeTo(
+		vertex{cx - 138, soleY - 4},
+		vertex{cx - bodyHW, 366},
+		vertex{cx - bodyHW, waistY},
+	)
+	p.cubeTo(
+		vertex{cx - bodyHW, 288},
+		vertex{cx - shoulderW - 8, 254},
+		vertex{cx - shoulderW, shoulderY},
+	)
+	p.cubeTo(
+		vertex{cx - shoulderW, shoulderY - 40},
+		vertex{cx - 122, headTop + 40},
+		vertex{cx - 92, headTop + 34},
 	)
 	p.close()
 	return p
 }
 
-// notchCenters are the profile positions of the gaps between the barbs. They
-// run down both edges of the vane, and they are what stop the shape reading as
-// one smooth leaf.
-var notchCenters = []float64{0.26, 0.42, 0.58, 0.73}
+// facePaths are the holes cut out of the owl: the eyes, the beak, and the belly
+// marks. They are subtracted rather than drawn, so they take the colour of
+// whatever the owl is placed on.
+func facePaths(detailed bool) []path {
+	var out []path
 
-const (
-	notchDepth = 30.0 // how far into the vane a gap cuts, in canvas units
-	notchHalf  = 0.055
-	notchSkew  = 0.018 // the gap leans this far down the feather, as barbs do
-)
-
-// notchPath is the union of the barb gaps: wedges that reach out past the
-// vane's edge and taper inwards to a point.
-func notchPath() path {
-	var p path
-	for _, u := range notchCenters {
-		_, hw := vaneAt(u)
-		outer := hw + 60
-		// The gap is a wedge: full depth where it opens onto the edge, closing
-		// to a point inside the vane. Cutting it with a straight hypotenuse
-		// instead would leave a triangle with the blunt side against the
-		// outline, which reads as a bite taken out rather than a part.
-		inner := hw - notchDepth
-		y0 := tipY + (u-notchHalf)*(vaneY-tipY)
-		y1 := tipY + (u+notchHalf)*(vaneY-tipY)
-		ym := tipY + (u+notchSkew)*(vaneY-tipY)
-
-		p.moveTo(vertex{cx + outer, y0})
-		p.lineTo(vertex{cx + inner, ym})
-		p.lineTo(vertex{cx + outer, y1})
-		p.close()
-
-		p.moveTo(vertex{cx - outer, y0})
-		p.lineTo(vertex{cx - inner, ym})
-		p.lineTo(vertex{cx - outer, y1})
-		p.close()
+	// The eyes, as two large circles. Big and close together is what makes a
+	// bird read as an owl rather than as a generic round bird.
+	//
+	// The pupils are wound the other way round inside the same path, so they
+	// cancel out of it and stay part of the owl rather than part of the hole.
+	// Below the detail threshold a pupil is narrower than a pixel and would
+	// only soften the eye's edge, so the eye stays a plain hole there.
+	var eyes path
+	eyes.circle(vertex{cx - eyeDX, eyeY}, eyeR)
+	eyes.circle(vertex{cx + eyeDX, eyeY}, eyeR)
+	if detailed {
+		eyes.circleReversed(vertex{cx - eyeDX, eyeY}, eyeR*0.46)
+		eyes.circleReversed(vertex{cx + eyeDX, eyeY}, eyeR*0.46)
 	}
-	return p
+	out = append(out, eyes)
+
+	// The beak: a short downward triangle between and below the eyes.
+	var beak path
+	beak.moveTo(vertex{cx, beakY + 44})
+	beak.lineTo(vertex{cx - 22, beakY})
+	beak.lineTo(vertex{cx + 22, beakY})
+	beak.close()
+	out = append(out, beak)
+
+	// The belly, as short chevrons: enough to say "feathers" without drawing a
+	// texture that would turn to noise at icon sizes.
+	if detailed {
+		for _, row := range []struct{ y, hw, drop float64 }{
+			{354, 56, 20},
+			{396, 42, 16},
+		} {
+			var v path
+			v.moveTo(vertex{cx - row.hw, row.y})
+			v.lineTo(vertex{cx, row.y + row.drop})
+			v.lineTo(vertex{cx + row.hw, row.y})
+			v.lineTo(vertex{cx + row.hw - 18, row.y - 13})
+			v.lineTo(vertex{cx, row.y + row.drop - 13})
+			v.lineTo(vertex{cx - row.hw + 18, row.y - 13})
+			v.close()
+			out = append(out, v)
+		}
+	}
+
+	return out
 }
 
 // tilePath is a rounded square covering the whole canvas, with corners rounded
 // in the proportion a modern application icon uses.
 func tilePath() path {
-	const (
-		radius = canvas * 0.225
-		kappa  = 0.5522847498
-	)
+	const radius = canvas * 0.225
 	r := radius
 	k := radius * kappa
 	const (

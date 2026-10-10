@@ -29,9 +29,8 @@ The only change to upstream code is two forwarding methods added to
 
 ## The mark
 
-The app's icon is a feather, for the osprey it is named after. It is not an
-image file: `desktop/brand/` draws it, and everything that shows it takes the
-same geometry.
+The app's icon is an owl. It is not an image file: `desktop/brand/` draws it,
+and everything that shows it takes the same geometry.
 
 ```bash
 # Look at it: writes an HTML sheet with every size, both icon forms, and the
@@ -44,16 +43,23 @@ go run -tags tools ./desktop/brand/preview -write
 
 Two forms come out of the one shape:
 
-- **Tile** — the feather in white on a rounded blue square. This is the
-  application icon: the file's icon in Explorer, the taskbar button, the window's
-  title bar, and the boot splash. A bare shape on a transparent square is hard to
-  pick out at 16 pixels in a taskbar; a solid tile is not.
-- **Mark** — the bare feather. This is the tray icon, in the status colour, and
-  the logo in the window's header. It is also `desktop/frontend/dist/mark.svg`,
+- **Tile** — the owl in white on a rounded blue square. This is the application
+  icon: the file's icon in Explorer, the taskbar button, the window's title bar,
+  and the boot splash. A bare shape on a transparent square is hard to pick out
+  at 16 pixels in a taskbar; a solid tile is not.
+- **Mark** — the bare owl, in the status colour for the tray and in the accent
+  colour for the window's header. It is also `desktop/frontend/dist/mark.svg`,
   which the interface embeds directly.
 
-Below 32 pixels the quill and the gaps between the barbs are dropped rather than
-shrunk into grey mush, leaving a clean silhouette.
+The eyes are cut *out* of the body rather than drawn on top of it, so they take
+the colour of whatever the owl is placed on. That is what lets one drawing be
+white on blue in the taskbar and dark on a light tray without a second colour to
+choose per context.
+
+Below 32 pixels the belly marks are dropped and the pupil is left out of the eye
+— at that size they are narrower than a pixel and only soften the edges. The
+eyes themselves are never dropped: they are the whole reason the shape reads as
+an owl.
 
 Windows draws an executable's icon from a resource inside the file, and
 `go build` writes none — so `buildapp` stamps one in after linking, along with
