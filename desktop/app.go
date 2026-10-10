@@ -153,6 +153,13 @@ func (a *App) SaveSettings(json string) error {
 	return a.core.SaveSettings(s)
 }
 
+// SetHubShareNewFolders adds or removes the built-in hub as a member of shared
+// folders. Applied immediately rather than with Save: it reaches folders that
+// are already shared.
+func (a *App) SetHubShareNewFolders(share bool) error {
+	return a.core.SetHubShareNewFolders(share)
+}
+
 // DeviceID returns the full local device ID.
 func (a *App) DeviceID() string { return a.core.LocalDeviceID() }
 

@@ -340,6 +340,19 @@ function wireActions() {
     }
   });
 
+  // The hub toggle applies on the spot rather than with Save: it reaches
+  // folders that are already shared, so it is an action, not a stored value.
+  $('set-hub-share').addEventListener('change', async () => {
+    const on = $('set-hub-share').checked;
+    try {
+      await api().SetHubShareNewFolders(on);
+      flash($('settings-saved'), t(on ? 'settings.hubShared' : 'settings.hubNotShared'));
+    } catch (e) {
+      $('set-hub-share').checked = !on;
+      alert(t('settings.saveFailed', { err: e }));
+    }
+  });
+
   $('move-data').addEventListener('click', async () => {
     const err = $('data-dir-error');
     err.classList.add('hidden');
@@ -614,6 +627,11 @@ async function loadSettings() {
   $('set-nat').checked = !!s.natEnabled;
   $('set-autostart').checked = !!s.autoStart;
   if (s.language) $('set-lang').value = s.language;
+
+  // The built-in hub is not a setting the user typed, so it is reported rather
+  // than offered as a field: name, ID and the address it is pinned to.
+  $('hub-line').textContent = t('settings.hubLine', { name: s.hubName, id: s.hubDeviceID, address: s.hubAddress });
+  $('set-hub-share').checked = !!s.hubShareNewFolders;
 }
 
 async function refreshLogs() {

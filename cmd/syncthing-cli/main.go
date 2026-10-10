@@ -51,6 +51,10 @@ func main() {
 
 	fmt.Printf("Device ID: %s\n", app.DeviceID())
 	fmt.Printf("Data dir:  %s\n", app.DataDir())
+	if s := app.Settings(); s.HubDeviceID != "" {
+		fmt.Printf("Hub:       %s (%s) at %s, new folders shared: %v\n",
+			s.HubName, s.HubDeviceID, s.HubAddress, s.HubShareNewFolders)
+	}
 
 	if *addDevice != "" {
 		if _, err := app.AddDevice(*addDevice, ""); err != nil {
@@ -116,6 +120,31 @@ func main() {
 		bs, _ := json.MarshalIndent(app.State().Snapshot(), "", "  ")
 		fmt.Println(string(bs))
 		return
+	}
+
+	// The hub is paired from the first start, but it still has to be accepted
+	// on the hub's side before it can connect. Until then it appears as a
+	// pending device here, which is a single answer to "is it paired yet".
+	// Running on an empty data directory and watching this line is how the
+	// built-in hub is verified end to end without the GUI.
+	if !*quiet {
+		snap := app.State().Snapshot()
+		hubState := "not configured"
+		for _, d := range snap.Devices {
+			if appcore.BuiltInDeviceName(d.ID) == "" {
+				continue
+			}
+			hubState = "paired"
+			if d.Connected {
+				hubState = "connected"
+			}
+		}
+		for _, p := range snap.PendingDevices {
+			if appcore.BuiltInDeviceName(p.ID) != "" {
+				hubState = "waiting to be accepted on the hub"
+			}
+		}
+		fmt.Printf("Hub state: %s\n", hubState)
 	}
 
 	var unsub func()

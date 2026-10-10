@@ -24,6 +24,14 @@ type Settings struct {
 	// Language is the interface language, persisted by the app rather than by
 	// syncthing.
 	Language Lang `json:"language"`
+
+	// The built-in hub. It is not editable here — the ID and address are
+	// constants — so these are reported for display, and the sharing switch is
+	// applied by SetHubShareNewFolders rather than by SaveSettings.
+	HubDeviceID        string `json:"hubDeviceID"`
+	HubName            string `json:"hubName"`
+	HubAddress         string `json:"hubAddress"`
+	HubShareNewFolders bool   `json:"hubShareNewFolders"`
 }
 
 // Settings returns the current user-facing settings.
@@ -42,6 +50,17 @@ func (a *App) Settings() Settings {
 		Language:      a.Language(),
 	}
 	s.AutoStart, _ = a.AutoStartEnabled()
+	if hub, id, ok := hubDevice(); ok {
+		s.HubDeviceID = id.String()
+		s.HubName = hub.Name
+		s.HubAddress = hubAddress
+		// The prefs value is what the user last chose; the template is what is
+		// actually in effect, and they can diverge if the config was edited by
+		// hand. The template wins, since that is what new folders get.
+		s.HubShareNewFolders = a.hubInFolderTemplate()
+	} else {
+		s.HubName = hubDeviceName
+	}
 	return s
 }
 

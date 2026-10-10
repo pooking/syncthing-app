@@ -309,6 +309,9 @@ var (
 // prefs is the app's own settings, kept apart from syncthing's config.xml.
 type prefs struct {
 	Language Lang `json:"language,omitempty"`
+	// HubShareNewFolders defaults to true; it is a pointer so a stored false
+	// is distinguishable from "never set". See hub.go.
+	HubShareNewFolders *bool `json:"hubShareNewFolders,omitempty"`
 }
 
 func (a *App) prefsPath() string { return filepath.Join(a.dataDir, "prefs.json") }
@@ -320,6 +323,7 @@ func (a *App) loadPrefs() {
 	defer a.mu.Unlock()
 
 	a.lang = DetectSystemLanguage()
+	a.hubShareNewFolders = true
 
 	data, err := os.ReadFile(a.prefsPath())
 	if err != nil {
@@ -332,11 +336,14 @@ func (a *App) loadPrefs() {
 	if lang := NormalizeLang(string(p.Language)); lang != "" {
 		a.lang = lang
 	}
+	if p.HubShareNewFolders != nil {
+		a.hubShareNewFolders = *p.HubShareNewFolders
+	}
 }
 
 func (a *App) savePrefs() error {
 	a.mu.Lock()
-	p := prefs{Language: a.lang}
+	p := prefs{Language: a.lang, HubShareNewFolders: &a.hubShareNewFolders}
 	a.mu.Unlock()
 
 	data, err := json.MarshalIndent(p, "", "  ")
@@ -354,6 +361,14 @@ func (a *App) Language() Lang {
 		return DefaultLang
 	}
 	return a.lang
+}
+
+// HubShareNewFolders reports whether folders created from now on are shared
+// with the built-in hub. See hub.go for what that buys.
+func (a *App) HubShareNewFolders() bool {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.hubShareNewFolders
 }
 
 // SetLanguage changes the interface language and persists the choice.

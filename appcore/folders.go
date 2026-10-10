@@ -152,9 +152,12 @@ func (a *App) AddFolders(paths []string, shareWith []string) (AddFolderResult, e
 			folder.ID = p.id
 			folder.Label = p.label
 			folder.Path = p.path
-			// Own device plus any peers selected by the user. The config
-			// preparation step guarantees our own device is present.
-			folder.Devices = []config.FolderDeviceConfiguration{{DeviceID: myID}}
+			// The template's own devices come first: that list is where the
+			// devices every new folder joins live, such as the built-in hub.
+			// Our own device and the peers the user picked are added to it;
+			// the config preparation step removes duplicates and our own entry
+			// is guaranteed to be present.
+			folder.Devices = append(folder.Devices, config.FolderDeviceConfiguration{DeviceID: myID})
 			for _, peer := range peers {
 				folder.Devices = append(folder.Devices, config.FolderDeviceConfiguration{DeviceID: peer})
 			}

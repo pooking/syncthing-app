@@ -58,9 +58,10 @@ type App struct {
 	opts    Options
 	dataDir string
 
-	// mu guards the app's own preferences (currently just the language).
-	mu   sync.Mutex
-	lang Lang
+	// mu guards the app's own preferences (language, hub sharing).
+	mu                 sync.Mutex
+	lang               Lang
+	hubShareNewFolders bool
 
 	st          *syncthing.App
 	cfg         config.Wrapper
@@ -178,6 +179,13 @@ func Start(opts Options) (*App, error) {
 
 	a.state = NewStateBridge(a.evLogger, a.st.Internals, cfgWrapper)
 	a.state.Start()
+
+	// Pair the built-in hub before the engine starts, so its first connection
+	// is not turned away as an unknown device.
+	if err := a.adoptHubDevice(a.HubShareNewFolders()); err != nil {
+		a.shutdown()
+		return nil, err
+	}
 
 	if err := a.st.Start(); err != nil {
 		a.shutdown()

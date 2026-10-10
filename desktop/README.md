@@ -190,10 +190,46 @@ reports the size so you can judge whether there is room.
 | `syncthing-app.log` | application log, also shown in the Logs tab |
 | `syncthing.lock` | single-instance lock |
 | `.setup-complete` | written after the first-run wizard finishes |
+| `hub-device-adopted` | written once, when the built-in hub was paired; its presence is what leaves the device list alone afterwards |
+| `prefs.json` | the app's own settings: language, and whether new folders join the hub |
 | `migrate-to.txt` | transient; present only between "move requested" and the restart that performs it |
 
 `data-dir.txt`, which names the data directory, lives in the *platform default*
 directory rather than in here — see above.
+
+### The built-in hub
+
+The app ships paired with one device that is not the user's:
+
+```
+kb-server  TTJYEAS-SGAEE5C-DBZ3HFD-DXNYYKN-SAOU4TP-QWF2B4M-NJT5I4P-GQ5Y3QN
+           tcp://101.69.254.66:22000
+```
+
+It runs on a server, and it is what lets two peers reach each other when a direct
+connection between them is not possible — a relay in syncthing's sense, using the
+same protocol. It is added to the configuration on the first start, *before* the
+engine is created, so its connections are never turned away as an unknown device,
+and it is pinned to a literal address rather than left to global discovery, which
+is unreliable where the app is deployed. `appcore/hub.go` holds the constants.
+
+It is added once, ever. A `hub-device-adopted` marker in the data directory
+records it, so un-pairing the hub afterwards sticks, and an existing
+installation that predates the hub keeps the device list its user built.
+
+**Settings → Hub device** also has a switch, on by default, that puts the hub in
+the folder template, so folders created from then on are *copied* to the hub and
+a new machine can fetch one with no other computer online. That is a backup, and
+it costs space on the hub. Turning the switch on also joins folders that are
+already shared; turning it off only stops future folders from joining, because
+removing the hub from a folder that is syncing to it would delete the copy
+stored there. Folders store their own device list, so the switch reaches a folder
+only if it is changed while that folder is not the hub itself. A folder's device
+list is fixed when the folder is created, which is why the template has to be
+kept in step at startup rather than only when the switch is flipped.
+
+Relays (`RelaysEnabled`) are a separate mechanism: those are the public relay
+pool, used when a direct connection is impossible and the hub is not reachable.
 
 ## Languages
 
