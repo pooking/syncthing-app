@@ -163,7 +163,7 @@ func (a *App) AcceptPendingFolder(deviceID, folderID, path string) (FolderState,
 	if err != nil {
 		return FolderState{}, a.errf(CodeInvalidDeviceID, err)
 	}
-	path, problem := normalizeFolderPath(path)
+	path, problem := ensureFolderRoot(path)
 	if problem != nil {
 		return FolderState{}, &localizedError{code: problem.Code, args: problem.Args, lang: a.Language()}
 	}

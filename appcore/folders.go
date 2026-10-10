@@ -503,6 +503,38 @@ func (a *App) OpenFolder(id string) error {
 
 // normalizeFolderPath validates and cleans a dropped path. It returns a coded
 // problem when the path cannot be used as a folder root.
+// ensureFolderRoot creates a shared folder's root if it is not there yet, and
+// returns the path to use. Only the directory the user named is created: an
+// inner directory of a folder that is merely missing is a mount point or a
+// removed folder, and creating it would start a sync against the wrong place.
+//
+// Without this an offered folder has to be accepted into a directory that
+// already exists, which is a step the user has no reason to expect when the app
+// itself suggested the location.
+func ensureFolderRoot(path string) (string, *UserError) {
+	if strings.TrimSpace(path) == "" {
+		return "", NewUserError(CodeEmptyPath)
+	}
+	dir, err := filepath.Abs(filepath.Clean(path))
+	if err != nil {
+		return "", NewUserError(CodeCannotResolve)
+	}
+	if dir == filepath.VolumeName(dir)+string(filepath.Separator) {
+		return "", NewUserError(CodeFilesystemRoot)
+	}
+	if info, err := os.Stat(dir); err == nil {
+		if !info.IsDir() {
+			return "", NewUserError(CodeNotADirectory)
+		}
+		return dir, nil
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return "", NewUserError(CodeCreateSyncDir, err)
+	}
+	return dir, nil
+}
+
+// normalizeFolderPath validates a directory that must already exist.
 func normalizeFolderPath(raw string) (string, *UserError) {
 	if raw == "" {
 		return "", NewUserError(CodeEmptyPath)

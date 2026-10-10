@@ -231,6 +231,30 @@ kept in step at startup rather than only when the switch is flipped.
 Relays (`RelaysEnabled`) are a separate mechanism: those are the public relay
 pool, used when a direct connection is impossible and the hub is not reachable.
 
+### Where shared folders go
+
+New shared folders get their root from the folder template, `Defaults.Folder.Path`
+in `config.xml`. The first-run wizard sets it from its "Where should shared
+folders live?" answer, defaulting to `Sync` in the user's home directory —
+`C:\Users\<you>\Sync` on Windows. **Choosing a directory in the wizard creates
+it**, including its parents; a folder root the user has to create by hand first
+is a step with no reason behind it.
+
+The same root is used for two other things, so all three agree:
+
+- a folder another device offers is accepted into `<root>\<folder ID>` when the
+  user does not pick a directory, and that directory is created;
+- the "add a folder" and "move a folder" choosers open in the root.
+
+`appcore.DefaultSyncDir` is the one place that answers "where is the root"; it
+resolves a leading `~` (which is what syncthing's own default uses) rather than
+handing the tilde to the filesystem, where it would become a literal directory
+named `~`.
+
+The root directory itself is not created until it is needed — the wizard, an
+accepted folder, or a folder the user adds. An installation that is only ever
+configured by hand therefore has no stray `Sync` directory.
+
 ## Languages
 
 The interface ships in English and Chinese. On first launch the language follows

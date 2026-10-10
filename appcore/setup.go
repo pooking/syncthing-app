@@ -8,6 +8,7 @@ package appcore
 
 import (
 	"encoding/base64"
+	"fmt"
 	"log/slog"
 	"net"
 	"os"
@@ -73,12 +74,10 @@ func (a *App) CompleteSetup(opts SetupOptions) error {
 	slog.Info("First-run setup completed", "syncDir", opts.SyncDir, "deviceName", opts.DeviceName)
 	var syncDir string
 	if opts.SyncDir != "" {
-		dir, problem := normalizeFolderPath(opts.SyncDir)
+		dir, problem := ensureFolderRoot(opts.SyncDir)
 		if problem != nil {
 			return &localizedError{code: problem.Code, args: problem.Args, lang: a.Language()}
 		}
-		// The directory does not have to exist yet; a default folder root is
-		// allowed to be created later.
 		syncDir = dir
 	}
 
@@ -116,17 +115,56 @@ func (a *App) CompleteSetup(opts SetupOptions) error {
 	return nil
 }
 
-// DefaultSyncDir returns the directory suggested for new shares: an explicit
-// setting if present, otherwise "Sync" in the user's home directory.
+// DefaultSyncDir returns the directory suggested for new shares: the folder
+// template's path, which is what the wizard's choice sets and what new folders
+// are built from. It falls back to "Sync" in the user's home directory.
+//
+// The result is an absolute path. Callers put it in front of the user and
+// create it, so a leading "~" left unexpanded would be written to disk as a
+// literal directory name.
 func (a *App) DefaultSyncDir() string {
-	if p := a.cfg.DefaultFolder().Path; p != "" && p != "~" {
-		return p
-	}
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return filepath.Join(filepath.Dir(a.dataDir), "Sync")
+		home = filepath.Dir(a.dataDir)
 	}
-	return filepath.Join(home, "Sync")
+	fallback := filepath.Join(home, "Sync")
+
+	// A template that has not been through the config preparation step still
+	// carries the literal "~" that syncthing's own default uses.
+	p := a.cfg.DefaultFolder().Path
+	if p == "" || p == "~" {
+		return fallback
+	}
+	expanded, err := expandHome(p, home)
+	if err != nil {
+		return fallback
+	}
+	// A relative template would become a relative folder path in the config,
+	// which resolves against whatever the working directory happens to be.
+	if !filepath.IsAbs(expanded) {
+		return fallback
+	}
+	return expanded
+}
+
+// expandHome resolves a leading tilde (plain "~", or "~/", "~\", "~/" with
+// either slash) against home. Any other path is returned unchanged.
+func expandHome(path, home string) (string, error) {
+	if !strings.HasPrefix(path, "~") && !strings.HasPrefix(path, "～") {
+		return path, nil
+	}
+	rest := path[len("~"):]
+	if rest == "" {
+		return home, nil
+	}
+	if rest[0] != '/' && rest[0] != '\\' {
+		return "", fmt.Errorf("%q is not a home-relative path", path)
+	}
+	rest = strings.TrimLeft(rest, `/\`)
+	if rest == "" {
+		return home, nil
+	}
+	return filepath.Join(home, filepath.FromSlash(rest)), nil
 }
 
 // DeviceIDQRCode returns a PNG QR code containing the device ID, base64

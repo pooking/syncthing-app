@@ -215,6 +215,11 @@ func (a *App) PickAndAddFolder(peersJSON string) (string, error) {
 
 	dir, err := wailsruntime.OpenDirectoryDialog(ctx, wailsruntime.OpenDialogOptions{
 		Title: a.core.T(appcore.CodeDialogPickFolder),
+		// Start where shares live rather than wherever the dialog remembers.
+		// Wails refuses a default directory that does not exist, so an
+		// installation that has never created one simply gets the last
+		// location back.
+		DefaultDirectory: existingDir(a.core.DefaultSyncDir()),
 	})
 	if err != nil {
 		return "", err
@@ -300,13 +305,12 @@ func (a *App) AcceptPendingDevice(id string) error {
 }
 
 // AcceptPendingFolder accepts a folder offered by another device. When path is
-// empty a directory inside the default sync root is used.
+// empty, a directory named after the folder is created under the default sync
+// root — the same place the wizard offered, and the same one a new folder of
+// the user's own would land in.
 func (a *App) AcceptPendingFolder(deviceID, folderID, path string) error {
 	if path == "" {
-		path = defaultAcceptPath(a.core.DataDir(), folderID)
-		if err := os.MkdirAll(path, 0o755); err != nil {
-			return fmt.Errorf("create directory: %w", err)
-		}
+		path = filepath.Join(a.core.DefaultSyncDir(), folderID)
 	}
 	_, err := a.core.AcceptPendingFolder(deviceID, folderID, path)
 	return err
@@ -363,7 +367,23 @@ func (a *App) PickDirectory(title string) (string, error) {
 	if title == "" {
 		title = a.core.T(appcore.CodeDialogPickFolder)
 	}
-	return wailsruntime.OpenDirectoryDialog(ctx, wailsruntime.OpenDialogOptions{Title: title})
+	return wailsruntime.OpenDirectoryDialog(ctx, wailsruntime.OpenDialogOptions{
+		Title:            title,
+		DefaultDirectory: existingDir(a.core.DefaultSyncDir()),
+	})
+}
+
+// existingDir returns path if it is a directory, and "" otherwise. It exists
+// because Wails rejects an OpenDialogOptions whose DefaultDirectory is missing,
+// which would turn a first run into a failure to open the dialog at all.
+func existingDir(path string) string {
+	if path == "" {
+		return ""
+	}
+	if info, err := os.Stat(path); err == nil && info.IsDir() {
+		return path
+	}
+	return ""
 }
 
 // ListeningPorts returns the TCP ports this instance listens on.
@@ -427,10 +447,4 @@ func (a *App) trayLoop() {
 		fmt.Fprintln(os.Stderr, "tray unavailable:", err)
 		<-a.quitting
 	}
-}
-
-// defaultAcceptPath picks where an accepted folder lands when the user does not
-// choose a directory.
-func defaultAcceptPath(dataDir, folderID string) string {
-	return filepath.Join(dataDir, "Sync", folderID)
 }
