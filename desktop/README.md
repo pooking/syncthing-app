@@ -238,6 +238,25 @@ reports the size so you can judge whether there is room.
 `data-dir.txt`, which names the data directory, lives in the *platform default*
 directory rather than in here — see above.
 
+### Device names
+
+A device's name is announced, not pushed. Every connection carries the
+connecting device's own name in the handshake, and the receiving side decides
+what to do with it: it adopts the name when it has none stored for that device,
+or when its `overwriteRemoteDeviceNamesOnConnect` option is on. That option is
+off in this app.
+
+So there is no message that renames a device on the other side. What you can do
+is set what *this* device calls *itself* — **Settings → Device name** — and every
+device that does not already know it will pick the new name up at the next
+connection. A device that does already know it keeps the name it stored, until
+it is removed and re-added there. The built-in hub is such a device: what it
+calls this machine is its own copy, written the first time this machine
+connected.
+
+The rename button on a device in the Devices tab is local in the same way. It
+changes what this app displays for that device and nothing else.
+
 ### The built-in hub
 
 The app ships paired with one device that is not the user's:

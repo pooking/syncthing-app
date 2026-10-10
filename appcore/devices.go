@@ -94,6 +94,16 @@ func (a *App) RemoveDevice(idStr string) error {
 }
 
 // RenameDevice updates the display name of a paired device.
+// RenameDevice changes the display name this app uses for a paired device.
+//
+// The name is local. There is no protocol message that renames a device on the
+// other side, and syncthing does the opposite instead: on every connection a
+// device announces its own name, and a peer adopts it when its stored name for
+// that device is empty or when OverwriteRemoteDevNames is on. That option is
+// off here, so a name set in this app sticks until the device is removed and
+// re-added. What the other side calls itself is its own business, and what the
+// hub calls this device is likewise the hub's copy of the name announced at
+// connect time — see SetDeviceName.
 func (a *App) RenameDevice(idStr, name string) error {
 	id, err := protocol.DeviceIDFromString(idStr)
 	if err != nil {

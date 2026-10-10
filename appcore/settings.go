@@ -140,7 +140,17 @@ func (a *App) Paused() bool {
 	return true
 }
 
-// SetDeviceName changes only the local device's display name.
+// SetDeviceName changes the local device's display name.
+//
+// The name travels: it is carried in the handshake as `DeviceName` on every
+// connection, so a peer that does not already know this device — or that has
+// OverwriteRemoteDevNames on — picks the new one up the next time it connects.
+// Nothing is pushed; it is announced, and the other end decides.
+//
+// A peer that has a name stored for this device and the option off keeps the
+// old one until the device is removed and re-added there. The built-in hub is
+// such a peer: what it calls this device is its own stored copy, and it was
+// written the first time this device connected.
 func (a *App) SetDeviceName(name string) error {
 	if name == "" {
 		return a.errf(CodeNameEmpty)

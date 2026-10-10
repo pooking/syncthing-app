@@ -127,6 +127,7 @@ const CATALOG = {
     // settings
     'settings.general': 'General',
     'settings.deviceName': 'Device name',
+    'settings.deviceNameHint': 'Announced to other devices when they connect. A device that already knows this one keeps the name it has until it is removed and re-added there.',
     'settings.autostart': 'Start OspreySyncTool when I sign in',
     'settings.language': 'Language',
     'settings.languageAuto': 'Follow system',
@@ -268,6 +269,7 @@ const CATALOG = {
 
     'settings.general': '常规',
     'settings.deviceName': '设备名称',
+    'settings.deviceNameHint': '对方设备连接时会收到这个名字。已经知道本机的设备会保留它原来记下的名字，除非在那边删除后重新添加。',
     'settings.autostart': '开机时自动启动 OspreySyncTool',
     'settings.language': '界面语言',
     'settings.languageAuto': '跟随系统',
