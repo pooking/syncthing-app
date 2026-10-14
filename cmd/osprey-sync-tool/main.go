@@ -30,6 +30,14 @@ func main() {
 	)
 	flag.Parse()
 
+	// Asked before the core starts, because the answer stops mattering once it
+	// has: the core takes the data directory's lock, and the launch below would
+	// then be reported as a conflict rather than as the second launch it is.
+	// See desktop/singleinstance_windows.go.
+	if desktop.SecondInstanceRunning() && desktop.WakeSecondInstance() == nil {
+		return
+	}
+
 	app, err := desktop.New(desktop.Options{
 		Portable:  *portable,
 		DataDir:   *dataDir,
@@ -37,10 +45,11 @@ func main() {
 	})
 	if err != nil {
 		if errors.Is(err, appcore.ErrAlreadyRunning) {
-			// The embedded core took the data directory lock, so another
-			// instance owns it. Wails' own single-instance lock normally
-			// prevents reaching this, but a second data directory means a
-			// genuine conflict worth reporting.
+			// Another instance holds the data directory lock. A launch that
+			// asks for a second, different data directory is refused by that
+			// same lock, and it is a genuine conflict — the two cannot share
+			// the instance that is already running, so there is nothing to do
+			// but say so.
 			desktop.Fatal("OspreySyncTool is already running", errors.New("another instance owns this data directory"))
 		}
 		desktop.Fatal("OspreySyncTool could not start", err)
