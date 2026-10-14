@@ -77,3 +77,12 @@ func runGo(t *testing.T, args ...string) (string, error) {
 	out, err := cmd.Output()
 	return strings.TrimSpace(string(out)), err
 }
+
+// runCommand runs a command and returns its combined output.
+func runCommand(t *testing.T, name string, args ...string) (string, error) {
+	t.Helper()
+	cmd := exec.Command(name, args...)
+	cmd.Dir = repoRoot()
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}

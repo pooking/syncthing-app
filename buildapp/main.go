@@ -14,6 +14,7 @@
 //
 //	go run ./buildapp                       # build for the host platform
 //	go run ./buildapp -goos windows -goarch amd64 -zip
+//	go run ./buildapp -goos windows -goarch amd64 -installer
 //	go run ./buildapp -all                  # windows, linux and macOS archives
 package main
 
@@ -62,6 +63,7 @@ var (
 	outDir  = flag.String("out", "dist", "output directory")
 	verFlag = flag.String("version", "", "version to stamp (default: derived from git)")
 	doZip   = flag.Bool("zip", false, "produce a portable zip archive")
+	doSetup = flag.Bool("installer", false, "also compile a Windows setup executable (needs Inno Setup 6)")
 	all     = flag.Bool("all", false, "build windows/amd64, linux/amd64 and darwin/universal archives")
 	skipGui = flag.Bool("cli-only", false, "build only the headless harness (useful for testing)")
 )
@@ -96,6 +98,24 @@ func main() {
 
 	if err := build(*goos, *goarch, *doZip); err != nil {
 		log.Fatal(err)
+	}
+	if *doSetup {
+		// Deliberately outside build(): the executable has to be linked and its
+		// resources written before the installer can pack it, and the installer
+		// packs exactly the file build() writes for windows/amd64 — so asking
+		// for it from a build for another platform is an error, not a mystery.
+		// Both sides derive the version the same way, so they agree without
+		// being told to.
+		if err := checkInstallerHost(); err != nil {
+			log.Fatal(err)
+		}
+		ver := *verFlag
+		if ver == "" {
+			ver = deriveVersion()
+		}
+		if err := buildInstaller(*outDir, ver); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 

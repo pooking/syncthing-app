@@ -18,12 +18,28 @@
 ### 交付物
 
 ```
-E:\Dev\OspreySyncTool\dist\
-├── OspreySyncTool-windows-amd64.zip     绿色便携包（分发这个）
-└── osprey-sync-tool-windows-amd64.exe
+E:\Dev\syncthing-app\dist\
+├── OspreySyncTool-windows-amd64.zip                    绿色便携包
+├── osprey-sync-tool-windows-amd64.exe
+└── OspreySyncTool-<version>-windows-amd64-setup.exe    Windows 安装包（per-user）
 ```
 
-构建：`go run -tags tools ./buildapp -zip`
+构建：
+
+```bash
+# 便携包
+go run -tags tools ./buildapp -zip
+
+# 便携包 + 安装包（安装包需要 Inno Setup 6：winget install JRSoftware.InnoSetup）
+go run -tags tools ./buildapp -goos windows -goarch amd64 -zip -installer
+```
+
+安装包为 per-user（`PrivilegesRequired=lowest`），装到
+`%LocalAppData%\Programs\OspreySyncTool`，不加 `.portable` 标记，数据仍在
+`%LocalAppData%\OspreySyncTool` —— 与直接运行裸 exe 共用同一份数据，因此
+安装不会凭空多出一个空设备身份。卸载只删程序，保留数据目录，并顺手清掉
+「登录时启动」的注册表值。图标与向导图由 `desktop/brand` 生成，
+`buildapp` 在编译前补齐缺失的那几张。
 
 ### 已写但**未验证**的部分（下次继续时优先补）
 
@@ -47,6 +63,8 @@ E:\Dev\OspreySyncTool\dist\
 
 5. **真实拖放**（`EnableFileDrop` + `OnFileDrop`）
    - 文件选择器路径已验证，拖拽路径未验证
+   - **2026-10-13 修**：页面从未调用 Wails 运行时的 JS `OnFileDrop`，所以 Wails 没有装它自己的 `drop` 监听器——Wails 的 `onDrop` 是唯一会 `preventDefault()` 并调 `postMessageWithAdditionalObjects('file:drop:…')` 的地方，Go 侧 `wailsruntime.OnFileDrop` 等的 `wails:file-drop` 事件只能由它发出。结果是：拖文件夹毫无反应（管道断在第一环），拖**文件**则走浏览器默认行为，WebView2 导航到该文件本身 → **空白窗口**（正是用户报的现象）。修法：`app.js` 的 `boot()` 里加 `rt().OnFileDrop(function () {}, false)`（回调留空，Go 侧仍经 `dropped` 事件回报；`false` = 不做落点元素过滤，全窗口可拖放，`.hot` 高亮本就由应用自己画），并给应用的 `drop` 监听器补上 `e.preventDefault()` 作兜底。`rendercheck.mjs` 新增断言「页面请求过 Wails 监听拖放」，缺了会红。
+   - 仍待验证：真实拖放无法程序化模拟（OLE drag），需人工拖一次文件夹与一次文件确认
 
 ### 其它已知问题 / 技术债
 
