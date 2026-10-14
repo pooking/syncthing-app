@@ -16,6 +16,7 @@ cross-compiles from any machine and needs no runtime to install.
 | `appcore/autostart/` | Start-at-login, one implementation per platform (registry / LaunchAgent / `.desktop`). |
 | `appcore/i18n.go` | Translation catalog for messages the Go side produces. |
 | `desktop/` | Wails v2 shell: window, tray, and the bindings the frontend calls. |
+| `desktop/singleinstance_windows.go` | The second launch: hand the click to the instance that is already running, before the core claims the data directory. |
 | `desktop/frontend/dist/` | The UI (plain HTML/CSS/JS, no build step), embedded into the binary. |
 | `desktop/frontend/dist/i18n.js` | Translation catalog for everything the UI displays. |
 | `desktop/brand/` | The mark: an owl, drawn in code. Every icon the app shows comes from here. |
@@ -80,6 +81,56 @@ dist/OspreySyncTool-windows-amd64.zip     portable archive (ship this)
 dist/osprey-sync-tool-windows-amd64.exe    bare binary
 ```
 
+### Windows installer
+
+```bash
+go run -tags tools ./buildapp -goos windows -goarch amd64 -zip -installer
+```
+
+That writes one more file:
+
+```
+dist/OspreySyncTool-<version>-windows-amd64-setup.exe
+```
+
+It is per-user and needs no administrator: the program goes to
+`%LocalAppData%\Programs\OspreySyncTool`, with a Start menu entry, an Add/Remove
+Programs entry, and an optional desktop icon. Its state stays in
+`%LocalAppData%\OspreySyncTool` — the same directory a non-portable run of the
+bare executable uses — so installing does not start a second, empty device
+alongside one that is already syncing. The uninstaller removes the program and
+leaves that directory alone, along with a login entry the app may have
+registered from its Settings page.
+
+The wizard is localized into every language Inno Setup ships — all of its own
+messages — and the language follows the display language Windows is set to, with
+a Select Language dialog on the first page to override it. The app's own
+interface language is a separate setting.
+
+Inno Setup translates no Chinese, so `desktop/installer/languages/` carries one:
+a third-party Simplified Chinese translation (MIT, by the maintainer of
+`kira-96/Inno-Setup-Chinese-Simplified-Translation`, from the community
+translations listed at <https://jrsoftware.org/files/istrans/>), used unchanged
+and attributed in `languages/LICENSE-ChineseSimplified.txt`. `buildapp` tests it
+against Inno's own message list, so a translation that falls behind shows up as
+a failing test rather than as a stray English line in the middle of the wizard.
+To add another language Inno lacks, drop its `.isl` in beside it and add one
+line to the `[Languages]` section.
+
+This is the one build step that needs a tool from outside the repository:
+`buildapp` looks for Inno Setup 6 in the places it installs itself and says so
+if it cannot find it.
+
+```powershell
+winget install JRSoftware.InnoSetup
+```
+
+The icon and the wizard panels are drawn by `desktop/brand` — the same geometry
+as the executable's icon and the tray — and generated into `desktop/installer/`
+on the first build. They are committed, so the installer can also be compiled by
+hand (`ISCC.exe desktop/installer/OspreySyncTool.iss`) on a machine that has no
+Go toolchain.
+
 ### Flags
 
 | Flag | Default | Meaning |
@@ -89,6 +140,7 @@ dist/osprey-sync-tool-windows-amd64.exe    bare binary
 | `-out` | `dist` | output directory |
 | `-version` | derived from git | version to stamp |
 | `-zip` | off | also write the portable archive |
+| `-installer` | off | also compile the Windows setup executable |
 | `-all` | off | build windows/amd64, linux/amd64, darwin/arm64 |
 | `-cli-only` | off | build only `cmd/syncthing-cli` |
 
@@ -160,7 +212,9 @@ where shared folders should live; both can be changed later in Settings.
 Portable mode turns on when the `-portable` flag is given **or** a file named
 `OspreySyncTool.portable` sits next to the executable. The `-zip` archive includes
 that marker, which is why the archive is the thing to distribute: extracting it
-gives a self-contained, self-updating-free folder.
+gives a self-contained, self-updating-free folder. An installed copy (the setup
+executable above) runs in the Windows mode below instead, so the two share one
+data directory rather than keeping separate identities.
 
 These paths deliberately differ from upstream Syncthing's, so this app never
 shares a config, database or lock file with a separately installed Syncthing.
@@ -362,6 +416,37 @@ before exiting.
 
 **Only one instance runs per data directory.** Launching again brings the
 existing window to the front.
+
+That second launch is decided before the core starts, not by Wails. Wails takes
+its own single-instance lock inside `wails.Run`, and `wails.Run` cannot be
+reached before the core is up — the window's callbacks and bindings are methods
+on the object the core returns. Starting the core first means its data directory
+lock is taken first, so the second process fails there and can only report a
+conflict, which is what it used to do ("another instance owns this data
+directory"). On Windows `desktop/singleinstance_windows.go` instead asks Wails'
+own question early: it opens Wails' single-instance mutex, and if it is held, it
+sends the running instance the same `WM_COPYDATA` message a second copy of the
+application sends, which raises that window. The second process then exits
+quietly. What it does *not* do is detect a second process — that is still Wails'
+job, and it is what stops two copies of the same window from appearing. The
+names and message numbers are copied out of Wails, so `go test ./buildapp/`
+checks them against Wails' own source. Other platforms are unchanged: Wails'
+single-instance lock there is a D-Bus name on Linux and a lock file plus an
+accessibility call on macOS, neither reachable without cgo.
+
+**Dropping onto the window shares the folder that was dropped.** A drop anywhere
+in the window counts, not only on the drop zone; the zone is just where that is
+said. What is shared is always a directory: Syncthing syncs folders, so a
+dropped *file* is refused with "that is not a folder" and the path shown, rather
+than being imported into some folder on the user's behalf.
+
+This needs the page to ask Wails for it. The Go side's
+`runtime.OnFileDrop` in `desktop/app.go` only receives an event once Wails' own
+drop listener — installed by the JavaScript `window.runtime.OnFileDrop` — has
+turned the drop into paths. Without that call a dropped file follows the
+browser's default and navigates the window to the file itself, which is a blank
+page, so `app.js` makes the call during boot and `rendercheck.mjs` fails if it
+ever stops.
 
 **Tray icon colours**: the mark in green when idle, blue while syncing, amber
 when paused, red on an error, and grey while starting or with no device
