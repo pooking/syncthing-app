@@ -61,6 +61,18 @@ async function boot() {
   });
   rt().EventsOn('dropped', (json) => showDropResult(JSON.parse(json)));
 
+  // Wails only turns a drop into paths for the Go side to see if the page asks
+  // it to listen. Without this call a dropped file follows the browser's own
+  // default and navigates the window to the file itself — a blank page — and
+  // nothing reaches the Go handler that emits 'dropped' above. The callback is
+  // empty on purpose: the Go side reports the result through that event, so
+  // there is nothing to do here with the paths.
+  //
+  // The second argument picks whether Wails filters the drop by the element it
+  // landed on (the `--wails-drop-target` style). It does not: anywhere in the
+  // window is a valid target, which is what the drop zone promises.
+  rt().OnFileDrop(function () {}, false);
+
   wireBoot();
   bootLog('events wired');
 
@@ -301,13 +313,16 @@ function wireActions() {
     if (res) showDropResult(JSON.parse(res));
   });
 
-  // Highlight the drop zone while a drag hovers it.
+  // Highlight the drop zone while a drag hovers it. The drop side also stops
+  // the browser's default, so a file that lands here can never navigate the
+  // window to itself — the listener that turns drops into paths is Wails',
+  // installed by OnFileDrop above, but this must not depend on it.
   const dz = $('dropzone');
   for (const type of ['dragenter', 'dragover']) {
     document.addEventListener(type, (e) => { e.preventDefault(); dz.classList.add('hot'); });
   }
   for (const type of ['dragleave', 'drop']) {
-    document.addEventListener(type, () => dz.classList.remove('hot'));
+    document.addEventListener(type, (e) => { e.preventDefault(); dz.classList.remove('hot'); });
   }
 
   $('add-device').addEventListener('click', async () => {

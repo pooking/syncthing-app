@@ -65,6 +65,7 @@ function load(scenario) {
   });
 
   const bootLog = [];
+  const fileDrop = [];
   const sandbox = {
     console: { log() {}, error() {}, warn() {} },
     document: {
@@ -90,7 +91,7 @@ function load(scenario) {
         GetLogs: async () => (scenario.nilLists ? 'null' : '[]'),
         BootLog: (step) => { bootLog.push(step); },
       } } },
-      runtime: { EventsOn() {} },
+      runtime: { EventsOn() {}, OnFileDrop: (cb, useDropTarget) => { fileDrop.push({ cb, useDropTarget }); } },
       location: { reload() {} },
     },
     navigator: { clipboard: { writeText: async () => {} } },
@@ -109,7 +110,7 @@ function load(scenario) {
   vm.createContext(sandbox);
   vm.runInContext(readFileSync(join(here, 'app.js'), 'utf8'), sandbox);
 
-  return { sandbox, get, bootLog };
+  return { sandbox, get, bootLog, fileDrop };
 }
 
 const DEVICE = 'AAAAAAA-BBBBBBB-CCCCCCC-DDDDDDD-EEEEEEE-FFFFFFF-GGGGGGG-HHHHHHH';
@@ -161,7 +162,7 @@ function check(name, ok, detail = '') {
 }
 
 async function run(label, snapshot, setup, nilLists = true) {
-  const { sandbox, get, bootLog } = load({ snapshot, setup, deviceID: DEVICE, nilLists });
+  const { sandbox, get, bootLog, fileDrop } = load({ snapshot, setup, deviceID: DEVICE, nilLists });
   let threw = '';
   try {
     await sandbox._domReady();
@@ -173,7 +174,7 @@ async function run(label, snapshot, setup, nilLists = true) {
   console.log(`\n--- ${label} ---`);
   console.log(`    journal: ${bootLog.join(' > ')}`);
   if (threw) console.log(`    boot() threw: ${threw}`);
-  return { shown, bootLog, threw, get };
+  return { shown, bootLog, threw, get, fileDrop };
 }
 
 const cases = [
@@ -185,10 +186,16 @@ const cases = [
 ];
 
 for (const [label, snapshot, setup] of cases) {
-  const { shown, threw, bootLog } = await run(label, snapshot, setup);
+  const { shown, threw, bootLog, fileDrop } = await run(label, snapshot, setup);
   check(`${label}: something is visible`, shown.length > 0, 'every screen hidden — blank window');
   check(`${label}: boot() did not throw`, !threw, threw);
   check(`${label}: journal reached the end`, bootLog.includes('done') || bootLog.includes('wizard shown'), bootLog.join(' > '));
+  // A dropped file navigates the window to itself unless Wails' own drop
+  // listener is installed, and Wails only installs it on the page's request.
+  // Exactly one request, without the drop-target filter: anywhere in the window
+  // accepts a drop.
+  check(`${label}: the page asked Wails to listen for drops`,
+    fileDrop.length === 1 && fileDrop[0].useDropTarget === false, `OnFileDrop calls: ${JSON.stringify(fileDrop.map((c) => c.useDropTarget))}`);
 }
 
 console.log(failures ? `\n${failures} check(s) failed` : '\nno blank-window path found');
